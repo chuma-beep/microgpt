@@ -1,16 +1,25 @@
-package main 
+package main
 
 import (
 	"fmt"
-	"math/rand"
 )
 
+func main() {
+	texts := []string{"hello", "world", "abc"}
+	t := NewTokenizer(texts)
 
-func main(){
-	source := rand.NewSource(42)
-    
-	r := rand.New(source) 
+	fmt.Printf("Vocab size: %d\n", t.VocabSize())
+	fmt.Printf("BOS: %d, UNK: %d\n", t.BOS, t.UNK)
+	fmt.Printf("Index to char: %v\n", t.IdxToChar)
 
-	fmt.Println(r.Intn(100))
+	encoded := t.Encode("hello")
+	fmt.Printf("Encode 'hello': %v\n", encoded)
 
+	decoded := t.Decode(encoded)
+	fmt.Printf("Decode: %q\n", decoded)
+
+	// test unknown char
+	encoded2 := t.Encode("xyz")
+	fmt.Printf("Encode 'xyz' (contains unknown): %v\n", encoded2)
+	fmt.Printf("Decode: %q\n", t.Decode(encoded2))
 }

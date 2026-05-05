@@ -1,4 +1,4 @@
-package tokenizer
+package main
 
 import (
 	"sort"
@@ -75,7 +75,7 @@ func (t *Tokenizer) Decode(tokens []int) string {
 
 	for _, id := range tokens {
 		// skip BOS
-		if id == t.BOS {
+		if id == t.BOS || id == t.UNK {
 			continue
 		}
 
