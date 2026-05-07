@@ -3,10 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>miniGPT — An interactive appendix</title>
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script src="/wasm_exec.js"></script>
+    <script>
+      window.wasmReady = false;
+      const go = new Go();
+      WebAssembly.instantiateStreaming(
+        fetch("/microgpt.wasm"),
+        go.importObject,
+      ).then((result) => {
+        go.run(result.instance);
+        window.wasmReady = true;
+        window.dispatchEvent(new Event("wasmReady"));
+      });
+    </script>
   </body>
 </html>
