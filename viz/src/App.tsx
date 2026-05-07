@@ -987,7 +987,7 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-[--paper] text-[--ink]">
-      <div className="fixed left-8 top-0 bottom-0 w-px bg-[--rule] pointer-events-none z-0" />
+      <div className="fixed left-8 top-0 bottom-0 w-px bg-[--rule] pointer-events-none z-0 margin-rule" />
       <div className="relative z-10 mx-auto max-w-5xl px-8 py-20">
         <header className="mb-16 border-b border-[--ink] pb-10">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
