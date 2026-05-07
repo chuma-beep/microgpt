@@ -266,7 +266,7 @@ function LossPanel() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-4 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">Solid: training loss. Dashed: held-out validation loss. Divergence after ~3k steps is consistent with mild overfitting on the names corpus.</p>
+      <p className="mt-4 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">Solid: training loss. Dashed: held-out validation loss. val loss tracks train loss without diverging, consistent with underfitting at this model size.</p>
     </div>
   );
 }
@@ -378,14 +378,14 @@ export default function App() {
             miniGPT<span className="block font-serif text-2xl italic text-[--muted-ink]">an interactive walkthrough of a 6 k-parameter transformer trained on names.</span>
           </h1>
           <p className="mt-8 max-w-2xl font-serif text-[15px] leading-[1.75] text-[--ink]">We trace a single forward pass — character to distribution — through every component of a minimal decoder-only transformer. Each figure below corresponds to one stage of the computation. Hover, type, and sample to inspect the model's internal state.</p>
-          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">vocab 27 · d_model 16 · 1 head · 1 block</div>
+          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">vocab 27 · d_model 16 · 4 head · 1 block</div>
         </header>
 
         <Section number="1" title="Tokenization" caption="Each character of the input name is mapped to an integer index in a 27-symbol vocabulary (a–z plus a single boundary marker `·` used as both BOS and EOS). The one-hot column on the right is the canonical representation passed to the embedding layer.">
           <TokenizerPanel name={name} setName={setName} />
         </Section>
 
-        <Section number="2" title="Embedding lookup" caption="The model maintains two lookup tables: a learned token embedding of shape (27, 16) and a fixed sinusoidal positional embedding. The input to the residual stream is the element-wise sum.">
+        <Section number="2" title="Embedding lookup" caption="The model maintains two lookup tables: a learned token embedding of shape (27, 16) and learned positional embedding. The input to the residual stream is the element-wise sum.">
           <EmbeddingPanel name={name} />
         </Section>
 
