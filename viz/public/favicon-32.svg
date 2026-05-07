@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#FAFAF7"/>
+  <!-- Bezier connections -->
+  <path d="M12 6 Q22 8 22 16" fill="none" stroke="#1B2A4A" stroke-width="1" stroke-linecap="round"/>
+  <path d="M22 16 Q22 24 12 26" fill="none" stroke="#1B2A4A" stroke-width="1" stroke-linecap="round"/>
+  <!-- EMB node (top) -->
+  <circle cx="12" cy="6" r="3" fill="none" stroke="#1B2A4A" stroke-width="1"/>
+  <!-- ATN node (middle-right, coral accent) -->
+  <circle cx="22" cy="16" r="3.5" fill="none" stroke="#E07A5F" stroke-width="1.5"/>
+  <!-- MLP node (bottom) -->
+  <circle cx="12" cy="26" r="3" fill="none" stroke="#1B2A4A" stroke-width="1"/>
+</svg>
