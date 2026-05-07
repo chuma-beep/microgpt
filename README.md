@@ -1,5 +1,3 @@
----
-
 # microgpt
 
 A minimal GPT implementation written from scratch in Go. No external ML libraries — matrix operations, backpropagation, and the Adam optimizer are all implemented manually on `[]float64` slices.
