@@ -7,41 +7,130 @@ A tiny GPT language model trained from scratch in ~300 lines of Go. No external 
 Trains on a dataset of first names and generates new, name-like strings.
 
 ```
-$ ./microgpt -steps 10000
-Loaded 4554 names
-Vocab size: 78
-step 0/10000, loss = 3.2421
-step 100/10000, loss = 2.8932
-step 200/10000, loss = 2.6234
-step 300/10000, loss = 2.4512
-step 400/10000, loss = 2.3234
-step 500/10000, loss = 2.2843
-step 600/10000, loss = 2.1234
-step 700/10000, loss = 2.0567
-step 800/10000, loss = 2.1234
-step 900/10000, loss = 2.0456
-
+$- microgpt: go run .
+Loaded 32033 names
+Vocab size: 27
+step 100/10000, avg loss = 3.2709
+step 200/10000, avg loss = 2.9365
+step 300/10000, avg loss = 2.7667
+step 400/10000, avg loss = 2.6826
+step 500/10000, avg loss = 2.6297
+step 600/10000, avg loss = 2.6187
+step 700/10000, avg loss = 2.4309
+step 800/10000, avg loss = 2.4725
+step 900/10000, avg loss = 2.4779
+step 1000/10000, avg loss = 2.5274
+step 1100/10000, avg loss = 2.5182
+step 1200/10000, avg loss = 2.4854
+step 1300/10000, avg loss = 2.5007
+step 1400/10000, avg loss = 2.5136
+step 1500/10000, avg loss = 2.4791
+step 1600/10000, avg loss = 2.4108
+step 1700/10000, avg loss = 2.4744
+step 1800/10000, avg loss = 2.4494
+step 1900/10000, avg loss = 2.5082
+step 2000/10000, avg loss = 2.4429
+step 2100/10000, avg loss = 2.5586
+step 2200/10000, avg loss = 2.4396
+step 2300/10000, avg loss = 2.4555
+step 2400/10000, avg loss = 2.5056
+step 2500/10000, avg loss = 2.4960
+step 2600/10000, avg loss = 2.4021
+step 2700/10000, avg loss = 2.4629
+step 2800/10000, avg loss = 2.4490
+step 2900/10000, avg loss = 2.4571
+step 3000/10000, avg loss = 2.4214
+step 3100/10000, avg loss = 2.3886
+step 3200/10000, avg loss = 2.4286
+step 3300/10000, avg loss = 2.3797
+step 3400/10000, avg loss = 2.4325
+step 3500/10000, avg loss = 2.4301
+step 3600/10000, avg loss = 2.3379
+step 3700/10000, avg loss = 2.4585
+step 3800/10000, avg loss = 2.4664
+step 3900/10000, avg loss = 2.3688
+step 4000/10000, avg loss = 2.3904
+step 4100/10000, avg loss = 2.4503
+step 4200/10000, avg loss = 2.4663
+step 4300/10000, avg loss = 2.4116
+step 4400/10000, avg loss = 2.4231
+step 4500/10000, avg loss = 2.3917
+step 4600/10000, avg loss = 2.4144
+step 4700/10000, avg loss = 2.3856
+step 4800/10000, avg loss = 2.3785
+step 4900/10000, avg loss = 2.3638
+step 5000/10000, avg loss = 2.3815
+step 5100/10000, avg loss = 2.4053
+step 5200/10000, avg loss = 2.4118
+step 5300/10000, avg loss = 2.3807
+step 5400/10000, avg loss = 2.4366
+step 5500/10000, avg loss = 2.4576
+step 5600/10000, avg loss = 2.4000
+step 5700/10000, avg loss = 2.3283
+step 5800/10000, avg loss = 2.3717
+step 5900/10000, avg loss = 2.3879
+step 6000/10000, avg loss = 2.4112
+step 6100/10000, avg loss = 2.4566
+step 6200/10000, avg loss = 2.4070
+step 6300/10000, avg loss = 2.3834
+step 6400/10000, avg loss = 2.3299
+step 6500/10000, avg loss = 2.4263
+step 6600/10000, avg loss = 2.4628
+step 6700/10000, avg loss = 2.3954
+step 6800/10000, avg loss = 2.3694
+step 6900/10000, avg loss = 2.4101
+step 7000/10000, avg loss = 2.3671
+step 7100/10000, avg loss = 2.4049
+step 7200/10000, avg loss = 2.4165
+step 7300/10000, avg loss = 2.3754
+step 7400/10000, avg loss = 2.3119
+step 7500/10000, avg loss = 2.4153
+step 7600/10000, avg loss = 2.2200
+step 7700/10000, avg loss = 2.4192
+step 7800/10000, avg loss = 2.4567
+step 7900/10000, avg loss = 2.4215
+step 8000/10000, avg loss = 2.3019
+step 8100/10000, avg loss = 2.4421
+step 8200/10000, avg loss = 2.3414
+step 8300/10000, avg loss = 2.4648
+step 8400/10000, avg loss = 2.3127
+step 8500/10000, avg loss = 2.3963
+step 8600/10000, avg loss = 2.3398
+step 8700/10000, avg loss = 2.3863
+step 8800/10000, avg loss = 2.5460
+step 8900/10000, avg loss = 2.3263
+step 9000/10000, avg loss = 2.3211
+step 9100/10000, avg loss = 2.4179
+step 9200/10000, avg loss = 2.2569
+step 9300/10000, avg loss = 2.3857
+step 9400/10000, avg loss = 2.3902
+step 9500/10000, avg loss = 2.3295
+step 9600/10000, avg loss = 2.4294
+step 9700/10000, avg loss = 2.4105
+step 9800/10000, avg loss = 2.2960
+step 9900/10000, avg loss = 2.3135
+step 10000/10000, avg loss = 2.4475
 --- Generated names (temperature 0.5) ---
- 1: keli
- 2: zenvy
- 3: velti
- 4: keneze
- 5: kittitza
- 6: enelette
- 7: kezi
- 8: velika
- 9: arlen
-10: lethan
-11: zekri
-12: eliza
-13: velen
-14: keli
-15: arita
-16: kesta
-17: zevar
-18: arina
-19: kivra
-20: ellia
+ 1: mena
+ 2: ancdy
+ 3: anayne
+ 4: a
+ 5: meelyn
+ 6: ieelee
+ 7: ieli
+ 8: marian
+ 9: carien
+10: eerely
+11: eediela
+12: aliee
+13: annie
+14: ee
+15: nnne
+16: elleey
+17: neiele
+18: rera
+19: ajurle
+20: ieieee
 ```
 
 This works. The model learned vowel patterns, common endings (-i, -a, -ize, -ette), and reasonable length distribution—genuine pattern recognition from just 10k training steps.
