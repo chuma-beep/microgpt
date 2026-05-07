@@ -7,7 +7,7 @@ import (
 	"math/rand/v2"
 )
 
-func Run() {
+func Run(steps int, genTemp float64) {
 	// Load data
 	names, err := LoadNames("https://raw.githubusercontent.com/karpathy/makemore/master/names.txt")
 	if err != nil {
@@ -32,8 +32,10 @@ func Run() {
 	// Adam
 	adam := NewAdam(len(paramsFlat))
 
-	steps := 5000
 	baseLR := 0.001
+    
+	var accumLoss float64
+    var accumCount int
 
 	for step := 0; step < steps; step++ {
 		doc := names[step%len(names)]
@@ -70,16 +72,22 @@ func Run() {
 				gr.data[i] = 0.0
 			}
 		}
+          
+		accumLoss += loss
+        accumCount++
 
-		if step%100 == 0 {
-			fmt.Printf("step %d/%d, loss = %.4f\n", step, steps, loss)
-		}
-	}
+      if step%100 == 99 {
+         avg := accumLoss / float64(accumCount)
+         fmt.Printf("step %d/%d, avg loss = %.4f\n", step+1, steps, avg)
+         accumLoss = 0
+         accumCount = 0
+      }	
+}
 
 	// Inference
-	fmt.Println("\n--- Generated names (temperature 0.5) ---")
+	fmt.Printf("\n--- Generated names (temperature %.1f) ---\n", genTemp)
 	for i := 0; i < 20; i++ {
-		name := gpt.Generate(0.5)
+		name := gpt.Generate(genTemp)
 		fmt.Printf("%2d: %s\n", i+1, name)
 	}
 }

@@ -26,13 +26,17 @@
 //
 //
 
-
-
-
-
-// main.go — entry point
+// main.go – entry point
 package main
 
+import (
+	"flag"
+)
+
 func main() {
-	Run()
+	steps := flag.Int("steps", 10000, "number of training steps")
+	genTemp := flag.Float64("temperature", 0.5, "temperature for generation")
+	flag.Parse()
+
+	Run(*steps, *genTemp)
 }
