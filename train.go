@@ -37,6 +37,25 @@ func loadWeights(path string, params []*matrix) error {
 	return nil
 }
 
+func calcValLoss(gpt *GPT, tok *Tokenizer, valNames []string) float64 {
+	var totalLoss float64
+	var count int
+	for _, doc := range valNames {
+		tokens := tok.Encode(doc)
+		n := min(blockSize, len(tokens)-1)
+		if n < 1 {
+			continue
+		}
+		loss, _ := gpt.ForwardSeq(tokens[:n+1])
+		totalLoss += loss
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	return totalLoss / float64(count)
+}
+
 func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 	// Load data
 	names, err := LoadNames("https://raw.githubusercontent.com/karpathy/makemore/master/names.txt")
@@ -48,6 +67,12 @@ func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 	// Tokenizer
 	tok := NewTokenizer(names)
 	fmt.Printf("Vocab size: %d\n", tok.VocabSize)
+
+	// Split data
+	splitIdx := int(float64(len(names)) * 0.9)
+	trainNames := names[:splitIdx]
+	valNames := names[splitIdx:]
+	fmt.Printf("Train: %d, Val: %d\n", len(trainNames), len(valNames))
 
 	// Model
 	gpt := NewGPT(tok)
@@ -83,7 +108,7 @@ func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 			var accumCount int
 
 			for step := 0; step < steps; step++ {
-				doc := names[step%len(names)]
+				doc := trainNames[step%len(trainNames)]
 				tokens := tok.Encode(doc)
 				n := min(blockSize, len(tokens)-1)
 				if n < 1 {
@@ -123,7 +148,12 @@ func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 
 				if step%100 == 99 {
 					avg := accumLoss / float64(accumCount)
-					fmt.Printf("step %d/%d, avg loss = %.4f\n", step+1, steps, avg)
+					fmt.Printf("step %d/%d, avg loss = %.4f", step+1, steps, avg)
+					if step%500 == 499 {
+						valLoss := calcValLoss(gpt, tok, valNames)
+						fmt.Printf(", val loss = %.4f", valLoss)
+					}
+					fmt.Println()
 					accumLoss = 0
 					accumCount = 0
 				}
