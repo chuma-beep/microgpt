@@ -699,6 +699,223 @@ function ArchitecturePanel() {
   );
 }
 
+function InteractiveTrainerSection() {
+  const [wasmReady, setWasmReady] = useState(false);
+  const [initStatus, setInitStatus] = useState<string>("initializing model...");
+  const [training, setTraining] = useState(false);
+  const [step, setStep] = useState(0);
+  const [loss, setLoss] = useState<number | null>(null);
+  const [lossHistory, setLossHistory] = useState<{ step: number; loss: number }[]>([]);
+  const [generated, setGenerated] = useState<{ step: number; name: string }[]>([]);
+  const [showGenerate, setShowGenerate] = useState(false);
+
+  useEffect(() => {
+    if (window.wasmReady) {
+      setWasmReady(true);
+      window.goInit((err: string | null, result: string) => {
+        if (err) {
+          setInitStatus(`error: ${err}`);
+        } else {
+          setInitStatus("ready");
+        }
+      });
+    }
+  }, []);
+
+  const handleReset = () => {
+    setTraining(false);
+    setStep(0);
+    setLoss(null);
+    setLossHistory([]);
+    setGenerated([]);
+    setShowGenerate(false);
+    setInitStatus("initializing model...");
+    window.goInit((err: string | null, result: string) => {
+      if (err) {
+        setInitStatus(`error: ${err}`);
+      } else {
+        setInitStatus("ready");
+      }
+    });
+  };
+
+  const startTraining = () => {
+    setTraining(true);
+    setStep(0);
+    setLossHistory([]);
+  };
+
+  useEffect(() => {
+    if (!training || !wasmReady) return;
+
+    let animationId: number;
+    let currentStep = step;
+
+    const loop = () => {
+      const lossVal = window.goTrainStep();
+      currentStep++;
+      setStep(currentStep);
+      setLoss(lossVal);
+
+      if (currentStep % 10 === 0) {
+        setLossHistory((prev) => [...prev, { step: currentStep, loss: lossVal }]);
+      }
+
+      if (currentStep % 1000 === 0) {
+        const name = window.goGenerate(0.5);
+        setGenerated((prev) => [...prev, { step: currentStep, name }]);
+      }
+
+      if (currentStep >= 1000 && !showGenerate) {
+        setShowGenerate(true);
+      }
+
+      if (currentStep < 10000) {
+        animationId = requestAnimationFrame(loop);
+      } else {
+        setTraining(false);
+      }
+    };
+
+    animationId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationId);
+  }, [training, wasmReady, step, showGenerate]);
+
+  const handleGenerate = () => {
+    if (!wasmReady || step < 1000) return;
+    const name = window.goGenerate(0.5);
+    setGenerated((prev) => [...prev, { step, name }]);
+  };
+
+  return (
+    <section className="border-t border-[--rule] py-14">
+      <header className="mb-8 grid grid-cols-12 gap-6">
+        <div className="col-span-12 md:col-span-3">
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink]">
+            Figure 7
+          </div>
+          <h2 className="mt-2 font-serif text-2xl leading-tight text-[--ink]">
+            Interactive training
+          </h2>
+        </div>
+        <p className="col-span-12 font-serif text-[15px] leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
+          Train the model in your browser. The Go/WASM implementation runs
+          entirely client-side — every forward pass, backward pass, and
+          parameter update happens in real time.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-6">
+          <div className="mb-4 flex flex-wrap gap-3">
+            <button
+              onClick={handleReset}
+              disabled={!wasmReady}
+              className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+            >
+              reset
+            </button>
+            {!training && step === 0 && (
+              <button
+                onClick={startTraining}
+                disabled={!wasmReady || initStatus !== "ready"}
+                className="border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] hover:bg-transparent hover:text-[--ink] disabled:text-[--muted-ink]"
+              >
+                start training
+              </button>
+            )}
+            {training && (
+              <button
+                onClick={() => setTraining(false)}
+                className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper]"
+              >
+                stop
+              </button>
+            )}
+            {!training && step > 0 && step < 10000 && (
+              <button
+                onClick={() => setTraining(true)}
+                disabled={!wasmReady}
+                className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+              >
+                resume
+              </button>
+            )}
+            <button
+              onClick={handleGenerate}
+              disabled={!wasmReady || !showGenerate}
+              className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+            >
+              generate
+            </button>
+          </div>
+
+          <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink]">
+            {initStatus}
+            {initStatus === "ready" && step > 0 && (
+              <span className="ml-4">
+                step {step} / 10000 · loss {loss?.toFixed(4) ?? "—"}
+              </span>
+            )}
+          </div>
+
+          {lossHistory.length > 0 && (
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={lossHistory}
+                  margin={{ top: 20, right: 40, left: 20, bottom: 30 }}
+                >
+                  <CartesianGrid stroke={RULE} strokeDasharray="0" vertical={false} />
+                  <XAxis
+                    dataKey="step"
+                    type="number"
+                    domain={[0, 10000]}
+                    ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+                    stroke={INK}
+                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+                    tickLine={{ stroke: INK }}
+                  />
+                  <YAxis
+                    domain={[2.0, 3.5]}
+                    ticks={[2.0, 2.5, 3.0, 3.5]}
+                    stroke={INK}
+                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+                    tickLine={{ stroke: INK }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="loss"
+                    stroke={INK}
+                    strokeWidth={1.5}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        <div className="col-span-12 lg:col-span-6">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink] mb-3">
+            generated samples
+          </div>
+          <div className="font-mono text-sm">
+            {generated.length === 0 && (
+              <div className="text-[--muted-ink]">— no samples yet —</div>
+            )}
+            {generated.map((g, i) => (
+              <div key={i} className="border-b border-[--rule] py-1">
+                <span className="text-[--muted-ink]">[{g.step}]</span> {g.name}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [name, setName] = useState("emma");
 
@@ -706,7 +923,7 @@ export default function App() {
     <main className="min-h-screen bg-[--paper] text-[--ink]">
       <div className="mx-auto max-w-5xl px-8 py-20">
         <header className="mb-16 border-b border-[--ink] pb-10">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-[--muted-ink]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.22er] text-[--muted-ink]">
             Appendix · vol. 1 · §3.2
           </div>
           <h1 className="mt-4 font-serif text-5xl leading-[1.1] tracking-tight text-[--ink]">
@@ -722,7 +939,7 @@ export default function App() {
             below corresponds to one stage of the computation. Hover, type, and
             sample to inspect the model's internal state.
           </p>
-          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
+          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18er] text-[--muted-ink]">
             vocab 27 · d_model 16 · 4 head · 1 block
           </div>
         </header>
@@ -781,7 +998,9 @@ export default function App() {
           <ArchitecturePanel />
         </Section>
 
-        <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
+        <InteractiveTrainerSection />
+
+        <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18er] text-[--muted-ink]">
           end of appendix · figures rendered live · no backend
         </footer>
       </div>
