@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LineChart,
   Line,
@@ -102,8 +102,38 @@ function Section({
   caption?: string;
   children: React.ReactNode;
 }) {
+  const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="py-20">
+    <section
+      ref={ref}
+      className={`py-20 ${visible ? "visible" : "section-animate"}`}
+    >
       <header className="mb-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3">
           <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
@@ -136,6 +166,8 @@ function TokenizerPanel({
     return ["."].concat(clean.split("")).concat(["."]);
   }, [name]);
 
+  const [animateKey, setAnimateKey] = useState(0);
+
   return (
     <div className="col-span-12 lg:col-span-12">
       <label className="mb-3 block font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
@@ -143,7 +175,10 @@ function TokenizerPanel({
       </label>
       <input
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => {
+          setName(e.target.value);
+          setAnimateKey((k) => k + 1);
+        }}
         spellCheck={false}
         className="w-full max-w-md border border-[--rule] bg-transparent px-3 py-2 font-mono text-base text-[--ink] outline-none focus:border-[--ink]"
       />
@@ -169,7 +204,11 @@ function TokenizerPanel({
             {sequence.map((c, i) => {
               const idx = charToIdx(c);
               return (
-                <tr key={i} className="border-b border-[--rule]">
+                <tr
+                  key={`${animateKey}-${i}`}
+                  className="token-row-animate border-b border-[--rule]"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
                   <td className="px-3 py-2 text-[--muted-ink]">{i}</td>
                   <td className="px-3 py-2">
                     {c === "." ? (
@@ -184,7 +223,7 @@ function TokenizerPanel({
                       {Array.from({ length: 27 }).map((_, k) => (
                         <div
                           key={k}
-                          className="h-3 w-[10px] border border-[--rule]"
+                          className="h-3 w-[10px] border border-[--rule] heatmap-cell"
                           style={{
                             backgroundColor: k === idx ? INK : "transparent",
                           }}
@@ -303,12 +342,7 @@ function AttentionPanel({ name }: { name: string }) {
   }, [name]);
 
   const matrix = useMemo(() => attentionMatrix(tokens), [tokens]);
-  const [hover, setHover] = useState<{ i: number; j: number } | null>(null);
-  const [revealKey, setRevealKey] = useState(0);
-  useEffect(() => {
-    setRevealKey((k) => k + 1);
-  }, [tokens]);
-
+  const [hover, setHover] = useState<{ i: number; j: number; value: number } | null>(null);
   const cell = 28;
 
   return (
@@ -337,7 +371,7 @@ function AttentionPanel({ name }: { name: string }) {
               </div>
             ))}
           </div>
-          <div key={revealKey} className="border border-[--ink]">
+          <div className="border border-[--ink]">
             {matrix.map((row, i) => (
               <div key={i} className="flex">
                 {row.map((w, j) => {
@@ -346,28 +380,28 @@ function AttentionPanel({ name }: { name: string }) {
                   return (
                     <div
                       key={j}
-                      onMouseEnter={() => setHover({ i, j })}
+                      onMouseEnter={() => setHover({ i, j, value: w })}
                       onMouseLeave={() => setHover(null)}
-                      className="attn-cell border border-[--rule]"
+                      className="attn-cell relative border border-[--rule]"
                       style={{
                         width: cell,
                         height: cell,
                         backgroundColor: `rgba(27,42,74,${(op * 0.95).toFixed(3)})`,
-                        animationDelay: `${order * 18}ms`,
+                        animationDelay: `${order * 20}ms`,
                       }}
-                    />
+                    >
+                      {hover && hover.i === i && hover.j === j && (
+                        <div className="attn-tooltip">
+                          {matrix[i][j].toFixed(3)}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             ))}
           </div>
         </div>
-        {hover && (
-          <div className="mt-4 inline-block border border-[--ink] bg-[--paper] px-3 py-1 font-mono text-xs text-[--ink]">
-            attn[{labels[hover.i]} → {labels[hover.j]}] ={" "}
-            {matrix[hover.i][hover.j].toFixed(3)}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -430,9 +464,7 @@ function LossPanel() {
               stroke={INK}
               strokeWidth={2}
               dot={false}
-              isAnimationActive={true}
-              animationDuration={1600}
-              animationEasing="linear"
+              isAnimationActive={false}
             />
             <Line
               type="monotone"
@@ -441,9 +473,7 @@ function LossPanel() {
               strokeWidth={2}
               strokeDasharray="4 3"
               dot={false}
-              isAnimationActive={true}
-              animationDuration={1600}
-              animationEasing="linear"
+              isAnimationActive={false}
             />
             <ReferenceDot
               x={10000}
@@ -586,7 +616,7 @@ function GenerationPanel() {
         <button
           onClick={handleGenerate}
           disabled={!wasmReady}
-          className="border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] hover:bg-transparent hover:text-[--ink] disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
         >
           {wasmReady ? "▸ sample next" : "loading model..."}
         </button>
@@ -595,7 +625,7 @@ function GenerationPanel() {
             setShown(0);
             setGenerations([]);
           }}
-          className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper]"
+          className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
         >
           reset
         </button>
@@ -657,12 +687,34 @@ const BLOCKS = [
 ];
 
 function ArchitecturePanel() {
+  const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      setVisibleBlocks(BLOCKS.map(() => true));
+      return;
+    }
+    BLOCKS.forEach((_, i) => {
+      setTimeout(() => {
+        setVisibleBlocks((prev) => {
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      }, i * 100);
+    });
+  }, []);
+
   return (
     <div className="col-span-12">
       <div className="flex flex-col items-stretch gap-0">
         {BLOCKS.map((b, i) => (
           <div key={i} className="flex flex-col items-center">
-            <div className="flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3">
+            <div
+              className={`block-animate flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
               <span className="font-serif text-[15px] text-[--ink]">
                 {b.name}
               </span>
@@ -670,16 +722,17 @@ function ArchitecturePanel() {
                 {b.params}
               </span>
             </div>
-            {i < BLOCKS.length - 1 && (
+            {i < BLOCKS.length - 1 && visibleBlocks[i] && (
               <div className="flex flex-col items-center">
-                <div className="h-6 w-px bg-[--ink]" />
+                <div className="arrow-animate h-6 w-px bg-[--ink] visible" style={{ animationDelay: `${i * 100 + 150}ms` }} />
                 <div
-                  className="h-0 w-0"
+                  className="h-0 w-0 arrow-animate visible"
                   style={{
                     borderLeft: "4px solid transparent",
                     borderRight: "4px solid transparent",
                     borderTop: `5px solid ${INK}`,
                     marginTop: -1,
+                    animationDelay: `${i * 100 + 180}ms`,
                   }}
                 />
               </div>
@@ -808,7 +861,7 @@ function InteractiveTrainerSection() {
             <button
               onClick={handleReset}
               disabled={!wasmReady}
-              className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
             >
               reset
             </button>
@@ -816,7 +869,7 @@ function InteractiveTrainerSection() {
               <button
                 onClick={startTraining}
                 disabled={!wasmReady || initStatus !== "ready"}
-                className="border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] hover:bg-transparent hover:text-[--ink] disabled:text-[--muted-ink]"
+                className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:text-[--muted-ink]"
               >
                 start training
               </button>
@@ -824,7 +877,7 @@ function InteractiveTrainerSection() {
             {training && (
               <button
                 onClick={() => setTraining(false)}
-                className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper]"
+                className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
               >
                 stop
               </button>
@@ -833,7 +886,7 @@ function InteractiveTrainerSection() {
               <button
                 onClick={() => setTraining(true)}
                 disabled={!wasmReady}
-                className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+                className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
               >
                 resume
               </button>
@@ -841,7 +894,7 @@ function InteractiveTrainerSection() {
             <button
               onClick={handleGenerate}
               disabled={!wasmReady || !showGenerate}
-              className="border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] hover:bg-[--ink] hover:text-[--paper] disabled:text-[--muted-ink]"
+              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
             >
               generate
             </button>

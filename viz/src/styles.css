@@ -27,6 +27,13 @@
     color: var(--ink);
     font-family: var(--font-serif);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @keyframes attn-fade {
@@ -34,9 +41,9 @@
   to   { opacity: 1; }
 }
 
-.attn-cell {
-  opacity: 0;
-  animation: attn-fade 220ms linear forwards;
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes caret-blink {
@@ -44,61 +51,119 @@
   50.01%, 100% { opacity: 0; }
 }
 
-.typewriter-caret {
-  animation: caret-blink 600ms steps(1, end) infinite;
+@keyframes line-draw {
+  from { stroke-dashoffset: 2000; }
+  to   { stroke-dashoffset: 0; }
 }
 
-.margin-rule {
-  position: fixed;
-  left: 32px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background-color: var(--rule);
-  z-index: 0;
+@keyframes block-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.content-wrapper {
-  position: relative;
-  z-index: 1;
+@keyframes arrow-draw {
+  from { stroke-dashoffset: 20; }
+  to   { stroke-dashoffset: 0; }
 }
 
-.figure-header {
-  border-top: 1px solid var(--ink);
-  padding-top: 12px;
+@keyframes typewriter {
+  from { width: 0; }
+  to   { width: 100%; }
 }
 
-.figure-number {
-  font-family: var(--font-serif);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted-ink);
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.figure-title {
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--ink);
+@keyframes section-appear {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.caption-text {
-  font-family: var(--font-serif);
-  font-size: 0.9em;
-  font-style: italic;
-  line-height: 1.7;
-  color: var(--muted-ink);
+.btn-hover {
+  transition: background-color 150ms linear, color 150ms linear, opacity 150ms linear;
 }
 
-.section-divider {
-  height: 1px;
-  background-color: var(--rule);
-  margin: 80px 0;
+.btn-hover:hover:not(:disabled) {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.btn-hover:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+.btn-hover:disabled {
+  cursor: not-allowed;
 }
 
 .attn-cell {
   border-radius: 0 !important;
+  transition: border-color 150ms linear;
+}
+
+.attn-cell:hover {
+  border: 1px solid var(--ink) !important;
+}
+
+.attn-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  padding: 2px 4px;
+  background-color: var(--paper);
+  border: 1px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.typewriter-text {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter linear forwards;
+}
+
+.section-animate {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.section-animate.visible {
+  animation: section-appear 400ms linear forwards;
+}
+
+.loss-line {
+  animation: line-draw 1.5s linear forwards;
+}
+
+.block-animate {
+  opacity: 0;
+}
+
+.block-animate.visible {
+  animation: block-fade 200ms linear forwards;
+}
+
+.arrow-animate {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+}
+
+.arrow-animate.visible {
+  animation: arrow-draw 200ms linear forwards;
+}
+
+.token-row-animate {
+  opacity: 0;
+  animation: slide-in 150ms linear forwards;
+}
+
+.heatmap-cell {
+  transition: background-color 300ms linear;
 }
