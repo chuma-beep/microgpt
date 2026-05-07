@@ -106,7 +106,9 @@ function Section({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) {
       setVisible(true);
       return;
@@ -119,7 +121,7 @@ function Section({
           observer.disconnect();
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.2 },
     );
 
     if (ref.current) {
@@ -183,7 +185,7 @@ function TokenizerPanel({
         className="w-full max-w-md border border-[--rule] bg-transparent px-3 py-2 font-mono text-base text-[--ink] outline-none focus:border-[--ink]"
       />
       <div className="mt-8 overflow-x-auto">
-        <table className="min-w-[520px] border-collapse font-mono text-sm token-table">
+        <table className="min-w-0 border-collapse font-mono text-sm token-table">
           <thead>
             <tr className="text-left">
               <th className="border-b border-[--ink] px-3 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
@@ -319,7 +321,7 @@ function EmbeddingPanel({ name }: { name: string }) {
       <div className="space-y-3">
         <HeatRow values={tok} label="token emb." />
         <HeatRow values={pos} label="positional" />
-        <div className="my-2 h-px w-[calc(112px+16*1.75rem)] max-w-full bg-[--ink]" />
+        <div className="my-2 h-px w-full max-w-full bg-[--ink]" />
         <HeatRow values={sum} label="x = e + p" />
       </div>
       <p className="mt-6 max-w-2xl font-serif text-sm leading-[1.7] text-[--muted-ink]">
@@ -332,6 +334,14 @@ function EmbeddingPanel({ name }: { name: string }) {
 }
 
 function AttentionPanel({ name }: { name: string }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const tokens = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
     return ["."].concat(clean.split("")).concat(["."]).map(charToIdx);
@@ -342,9 +352,13 @@ function AttentionPanel({ name }: { name: string }) {
   }, [name]);
 
   const matrix = useMemo(() => attentionMatrix(tokens), [tokens]);
-  const [hover, setHover] = useState<{ i: number; j: number; value: number } | null>(null);
+  const [hover, setHover] = useState<{
+    i: number;
+    j: number;
+    value: number;
+  } | null>(null);
   const [touched, setTouched] = useState<{ i: number; j: number } | null>(null);
-  const cell = 28;
+  const cell = isMobile ? 20 : 28;
 
   return (
     <div className="col-span-12 lg:col-span-8">
@@ -360,7 +374,7 @@ function AttentionPanel({ name }: { name: string }) {
             </div>
           ))}
         </div>
-        <div className="flex">
+        <div className="flex overflow-x-auto">
           <div className="flex flex-col">
             {labels.map((c, i) => (
               <div
@@ -393,7 +407,8 @@ function AttentionPanel({ name }: { name: string }) {
                         animationDelay: `${order * 20}ms`,
                       }}
                     >
-                      {(hover && hover.i === i && hover.j === j) || (touched && touched.i === i && touched.j === j) ? (
+                      {(hover && hover.i === i && hover.j === j) ||
+                      (touched && touched.i === i && touched.j === j) ? (
                         <div className="attn-tooltip">
                           {matrix[i][j].toFixed(3)}
                         </div>
@@ -411,13 +426,26 @@ function AttentionPanel({ name }: { name: string }) {
 }
 
 function LossPanel() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div className="col-span-12">
       <div className="h-[360px] w-full loss-chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={LOSS_DATA}
-            margin={{ top: 20, right: 80, left: 20, bottom: 30 }}
+            margin={{
+              top: 20,
+              right: isMobile ? 20 : 80,
+              left: 20,
+              bottom: 30,
+            }}
           >
             <CartesianGrid stroke={RULE} strokeDasharray="0" vertical={false} />
             <XAxis
@@ -426,7 +454,12 @@ function LossPanel() {
               domain={[0, 10000]}
               ticks={[0, 2000, 4000, 6000, 8000, 10000]}
               stroke={INK}
-              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
+              tick={{
+                fill: INK,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontStyle: "italic",
+              }}
               tickLine={{ stroke: INK }}
               axisLine={{ stroke: INK, strokeWidth: 1 }}
               label={{
@@ -445,7 +478,12 @@ function LossPanel() {
               domain={[2.0, 3.5]}
               ticks={[2.0, 2.5, 3.0, 3.5]}
               stroke={INK}
-              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
+              tick={{
+                fill: INK,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontStyle: "italic",
+              }}
               tickLine={{ stroke: INK }}
               axisLine={{ stroke: INK, strokeWidth: 1 }}
               label={{
@@ -693,7 +731,9 @@ function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) {
       setVisibleBlocks(BLOCKS.map(() => true));
       return;
@@ -727,7 +767,10 @@ function ArchitecturePanel() {
             </div>
             {i < BLOCKS.length - 1 && visibleBlocks[i] && (
               <div className="flex flex-col items-center">
-                <div className="arrow-animate h-6 w-px bg-[--ink] visible" style={{ animationDelay: `${i * 100 + 150}ms` }} />
+                <div
+                  className="arrow-animate h-6 w-px bg-[--ink] visible"
+                  style={{ animationDelay: `${i * 100 + 150}ms` }}
+                />
                 <div
                   className="h-0 w-0 arrow-animate visible"
                   style={{
@@ -752,10 +795,16 @@ function ArchitecturePanel() {
         {BLOCKS.map((b, i) => (
           <div key={i}>
             <div className="arch-simple-item">
-              <div className="font-serif text-[15px] text-[--ink]">{b.name}</div>
-              <div className="font-mono text-[11px] text-[--muted-ink]">{b.params}</div>
+              <div className="font-serif text-[15px] text-[--ink]">
+                {b.name}
+              </div>
+              <div className="font-mono text-[11px] text-[--muted-ink]">
+                {b.params}
+              </div>
             </div>
-            {i < BLOCKS.length - 1 && <div className="arch-simple-arrow">↓</div>}
+            {i < BLOCKS.length - 1 && (
+              <div className="arch-simple-arrow">↓</div>
+            )}
           </div>
         ))}
       </div>
@@ -769,8 +818,12 @@ function InteractiveTrainerSection() {
   const [training, setTraining] = useState(false);
   const [step, setStep] = useState(0);
   const [loss, setLoss] = useState<number | null>(null);
-  const [lossHistory, setLossHistory] = useState<{ step: number; loss: number }[]>([]);
-  const [generated, setGenerated] = useState<{ step: number; name: string }[]>([]);
+  const [lossHistory, setLossHistory] = useState<
+    { step: number; loss: number }[]
+  >([]);
+  const [generated, setGenerated] = useState<{ step: number; name: string }[]>(
+    [],
+  );
   const [showGenerate, setShowGenerate] = useState(false);
 
   useEffect(() => {
@@ -822,7 +875,10 @@ function InteractiveTrainerSection() {
       setLoss(lossVal);
 
       if (currentStep % 10 === 0) {
-        setLossHistory((prev) => [...prev, { step: currentStep, loss: lossVal }]);
+        setLossHistory((prev) => [
+          ...prev,
+          { step: currentStep, loss: lossVal },
+        ]);
       }
 
       if (currentStep % 1000 === 0) {
@@ -930,14 +986,23 @@ function InteractiveTrainerSection() {
                   data={lossHistory}
                   margin={{ top: 20, right: 40, left: 20, bottom: 30 }}
                 >
-                  <CartesianGrid stroke={RULE} strokeDasharray="0" vertical={false} />
+                  <CartesianGrid
+                    stroke={RULE}
+                    strokeDasharray="0"
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="step"
                     type="number"
                     domain={[0, 10000]}
                     ticks={[0, 2000, 4000, 6000, 8000, 10000]}
                     stroke={INK}
-                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
+                    tick={{
+                      fill: INK,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      fontStyle: "italic",
+                    }}
                     tickLine={{ stroke: INK }}
                     axisLine={{ stroke: INK, strokeWidth: 1 }}
                   />
@@ -945,7 +1010,12 @@ function InteractiveTrainerSection() {
                     domain={[2.0, 3.5]}
                     ticks={[2.0, 2.5, 3.0, 3.5]}
                     stroke={INK}
-                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
+                    tick={{
+                      fill: INK,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      fontStyle: "italic",
+                    }}
                     tickLine={{ stroke: INK }}
                     axisLine={{ stroke: INK, strokeWidth: 1 }}
                   />

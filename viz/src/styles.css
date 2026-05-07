@@ -1,8 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-serif:
+    "EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino,
+    "Book Antiqua", Georgia, serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
 }
 
@@ -26,10 +28,19 @@
     background-color: var(--paper);
     color: var(--ink);
     font-family: var(--font-serif);
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
@@ -37,52 +48,97 @@
 }
 
 @keyframes attn-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes caret-blink {
-  0%, 50%   { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes line-draw {
-  from { stroke-dashoffset: 2000; }
-  to   { stroke-dashoffset: 0; }
+  from {
+    stroke-dashoffset: 2000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes block-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes arrow-draw {
-  from { stroke-dashoffset: 20; }
-  to   { stroke-dashoffset: 0; }
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes typewriter {
-  from { width: 0; }
-  to   { width: 100%; }
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes section-appear {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-hover {
-  transition: background-color 150ms linear, color 150ms linear, opacity 150ms linear;
+  transition:
+    background-color 150ms linear,
+    color 150ms linear,
+    opacity 150ms linear;
 }
 
 .btn-hover:hover:not(:disabled) {
@@ -186,17 +242,22 @@
   }
 
   /* Increase line height */
-  body, p, .font-serif {
+  body,
+  p,
+  .font-serif {
     line-height: 1.8 !important;
   }
 
   /* Minimum font size 14px */
-  body, * {
+  body,
+  * {
     font-size: max(14px, inherit) !important;
   }
 
   /* Make fixed-width elements fluid */
-  .max-w-md, .max-w-2xl, .max-w-5xl {
+  .max-w-md,
+  .max-w-2xl,
+  .max-w-5xl {
     max-width: 100% !important;
   }
 }
@@ -225,12 +286,15 @@
   }
 
   /* Reduce table font size */
-  .token-table, .token-table td, .token-table th {
+  .token-table,
+  .token-table td,
+  .token-table th {
     font-size: 12px !important;
   }
 
   /* Reduce cell padding */
-  .token-table td, .token-table th {
+  .token-table td,
+  .token-table th {
     padding: 6px 8px !important;
   }
 }
