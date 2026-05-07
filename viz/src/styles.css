@@ -167,3 +167,336 @@
 .heatmap-cell {
   transition: background-color 300ms linear;
 }
+
+/* ========================================
+   MOBILE RESPONSIVE STYLES (< 640px)
+   ======================================== */
+
+/* Global layout */
+@media (max-width: 639px) {
+  /* Reduce horizontal padding */
+  .relative.z-10.mx-auto.max-w-5xl.px-8 {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Hide left margin rule on mobile */
+  .margin-rule {
+    display: none !important;
+  }
+
+  /* Increase line height */
+  body, p, .font-serif {
+    line-height: 1.8 !important;
+  }
+
+  /* Minimum font size 14px */
+  body, * {
+    font-size: max(14px, inherit) !important;
+  }
+
+  /* Make fixed-width elements fluid */
+  .max-w-md, .max-w-2xl, .max-w-5xl {
+    max-width: 100% !important;
+  }
+}
+
+/* Tablet (640px - 1024px) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .margin-rule {
+    left: 24px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 1 - TOKENIZER
+   ======================================== */
+@media (max-width: 639px) {
+  /* Input field full width */
+  input.w-full.max-w-md {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Table scrolls horizontally */
+  .token-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Reduce table font size */
+  .token-table, .token-table td, .token-table th {
+    font-size: 12px !important;
+  }
+
+  /* Reduce cell padding */
+  .token-table td, .token-table th {
+    padding: 6px 8px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 2 - EMBEDDING
+   ======================================== */
+@media (max-width: 639px) {
+  /* Stack embedding rows vertically */
+  .embedding-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Label above heatmap */
+  .embedding-row > div:first-child {
+    margin-bottom: 8px !important;
+    width: 100% !important;
+  }
+
+  /* Heatmap row full width */
+  .embedding-row .flex {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* Reduce heatmap cell size */
+  .embedding-row .flex > div {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
+
+  /* Reduce gap */
+  .embedding-row .flex.gap-3 {
+    gap: 2px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 3 - ATTENTION HEATMAP
+   ======================================== */
+@media (max-width: 639px) {
+  /* Scale down heatmap */
+  .attention-container {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* Reduce cell size to minimum 20px, tap target 24px */
+  .attn-cell {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
+
+  /* Smaller labels */
+  .attention-container .font-mono.text-\[11px\] {
+    font-size: 9px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 4 - LOSS CHART
+   ======================================== */
+@media (max-width: 639px) {
+  /* Full width */
+  .loss-chart-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Reduce height */
+  .loss-chart-container.h-\[360px\] {
+    height: 250px !important;
+  }
+
+  /* Axis labels smaller */
+  .recharts-text {
+    font-size: 10px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 5 - GENERATION PANEL
+   ======================================== */
+@media (max-width: 639px) {
+  /* Buttons full width */
+  .generation-controls {
+    gap: 8px !important;
+  }
+
+  .generation-controls button {
+    width: 100% !important;
+    flex: 1 !important;
+    min-width: 100% !important;
+  }
+
+  .generation-controls button + button {
+    margin-top: 8px !important;
+  }
+}
+
+/* ========================================
+   FIGURE 6 - ARCHITECTURE
+   ======================================== */
+@media (max-width: 639px) {
+  /* Hide complex diagram */
+  .arch-complex {
+    display: none !important;
+  }
+
+  /* Show simplified list */
+  .simplified-version {
+    display: flex !important;
+  }
+
+  /* Scale down container */
+  .arch-diagram-container {
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+}
+
+/* Simplified architecture list */
+.simplified-version {
+  display: none !important;
+}
+
+@media (max-width: 639px) {
+  .arch-simple-list {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .arch-simple-item {
+    padding: 8px 16px !important;
+    border: 1px solid var(--ink) !important;
+    width: 100% !important;
+    max-width: 280px !important;
+    text-align: center !important;
+  }
+
+  .arch-simple-arrow {
+    font-size: 14px !important;
+    color: var(--muted-ink) !important;
+  }
+}
+
+/* ========================================
+   TRAINING SECTION
+   ======================================== */
+@media (max-width: 639px) {
+  /* Stack controls vertically */
+  .training-controls {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .training-controls button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  /* Stats on same line */
+  .training-stats {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-family: var(--font-mono) !important;
+    font-size: 12px !important;
+  }
+
+  /* Full width chart */
+  .training-chart {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .training-chart.h-\[280px\] {
+    height: 200px !important;
+  }
+
+  /* Generate button full width */
+  .training-generate-btn {
+    width: 100% !important;
+  }
+}
+
+/* ========================================
+   TOUCH INTERACTIONS
+   ======================================== */
+@media (max-width: 1023px) {
+  /* Hover effects on tap */
+  .ink-btn:active::before {
+    width: 100% !important;
+  }
+
+  /* Minimum tap target 44px */
+  button {
+    min-height: 44px !important;
+    padding: 12px 16px !important;
+  }
+}
+
+/* ========================================
+   ADDITIONAL MOBILE ADJUSTMENTS
+   ======================================== */
+@media (max-width: 639px) {
+  /* Reduce section padding */
+  .py-20 {
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
+  }
+
+  /* Header adjustments */
+  header.mb-16 {
+    margin-bottom: 40px !important;
+    padding-bottom: 30px !important;
+  }
+
+  /* Title size */
+  h1.font-serif.text-5xl {
+    font-size: 2.5rem !important;
+  }
+
+  /* Subtitle */
+  .subtitle-fade {
+    font-size: 1.1rem !important;
+  }
+
+  /* Grid to single column */
+  .grid-cols-12 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce gap */
+  .gap-6 {
+    gap: 16px !important;
+  }
+
+  /* Full width sections */
+  .col-span-12 {
+    width: 100% !important;
+  }
+}
+
+/* Tablet grid adjustments */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .md\:col-span-3 {
+    grid-column: span 4 !important;
+  }
+
+  .md\:col-span-7 {
+    grid-column: span 8 !important;
+  }
+
+  .md\:col-start-5 {
+    grid-column-start: 1 !important;
+  }
+
+  .px-8 {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+}

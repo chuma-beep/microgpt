@@ -183,7 +183,7 @@ function TokenizerPanel({
         className="w-full max-w-md border border-[--rule] bg-transparent px-3 py-2 font-mono text-base text-[--ink] outline-none focus:border-[--ink]"
       />
       <div className="mt-8 overflow-x-auto">
-        <table className="min-w-[520px] border-collapse font-mono text-sm">
+        <table className="min-w-[520px] border-collapse font-mono text-sm token-table">
           <thead>
             <tr className="text-left">
               <th className="border-b border-[--ink] px-3 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
@@ -254,7 +254,7 @@ function HeatRow({
     ? Math.max(...values.map((v) => Math.abs(v))) || 1
     : Math.max(...values) || 1;
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 embedding-row">
       <div className="w-28 shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-[--muted-ink]">
         {label}
       </div>
@@ -343,11 +343,12 @@ function AttentionPanel({ name }: { name: string }) {
 
   const matrix = useMemo(() => attentionMatrix(tokens), [tokens]);
   const [hover, setHover] = useState<{ i: number; j: number; value: number } | null>(null);
+  const [touched, setTouched] = useState<{ i: number; j: number } | null>(null);
   const cell = 28;
 
   return (
     <div className="col-span-12 lg:col-span-8">
-      <div className="relative inline-block">
+      <div className="relative inline-block attention-container">
         <div className="ml-7 flex">
           {labels.map((c, j) => (
             <div
@@ -382,6 +383,8 @@ function AttentionPanel({ name }: { name: string }) {
                       key={j}
                       onMouseEnter={() => setHover({ i, j, value: w })}
                       onMouseLeave={() => setHover(null)}
+                      onTouchStart={() => setTouched({ i, j })}
+                      onTouchEnd={() => setTouched(null)}
                       className="attn-cell relative border border-[--rule]"
                       style={{
                         width: cell,
@@ -390,11 +393,11 @@ function AttentionPanel({ name }: { name: string }) {
                         animationDelay: `${order * 20}ms`,
                       }}
                     >
-                      {hover && hover.i === i && hover.j === j && (
+                      {(hover && hover.i === i && hover.j === j) || (touched && touched.i === i && touched.j === j) ? (
                         <div className="attn-tooltip">
                           {matrix[i][j].toFixed(3)}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   );
                 })}
@@ -410,7 +413,7 @@ function AttentionPanel({ name }: { name: string }) {
 function LossPanel() {
   return (
     <div className="col-span-12">
-      <div className="h-[360px] w-full">
+      <div className="h-[360px] w-full loss-chart-container">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={LOSS_DATA}
@@ -612,7 +615,7 @@ function GenerationPanel() {
 
   return (
     <div className="col-span-12">
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex items-center gap-4 generation-controls">
         <button
           onClick={handleGenerate}
           disabled={!wasmReady}
@@ -707,8 +710,8 @@ function ArchitecturePanel() {
   }, []);
 
   return (
-    <div className="col-span-12">
-      <div className="flex flex-col items-stretch gap-0">
+    <div className="col-span-12 arch-diagram-container">
+      <div className="flex flex-col items-stretch gap-0 arch-complex">
         {BLOCKS.map((b, i) => (
           <div key={i} className="flex flex-col items-center">
             <div
@@ -745,6 +748,17 @@ function ArchitecturePanel() {
         block, no layer stacking. The smallest configuration that still learns
         plausible English-looking name morphology.
       </p>
+      <div className="hidden arch-simple-list simplified-version">
+        {BLOCKS.map((b, i) => (
+          <div key={i}>
+            <div className="arch-simple-item">
+              <div className="font-serif text-[15px] text-[--ink]">{b.name}</div>
+              <div className="font-mono text-[11px] text-[--muted-ink]">{b.params}</div>
+            </div>
+            {i < BLOCKS.length - 1 && <div className="arch-simple-arrow">↓</div>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -857,7 +871,7 @@ function InteractiveTrainerSection() {
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-6">
-          <div className="mb-4 flex flex-wrap gap-3">
+          <div className="mb-4 flex flex-wrap gap-3 training-controls">
             <button
               onClick={handleReset}
               disabled={!wasmReady}
@@ -894,13 +908,13 @@ function InteractiveTrainerSection() {
             <button
               onClick={handleGenerate}
               disabled={!wasmReady || !showGenerate}
-              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink] training-generate-btn"
             >
               generate
             </button>
           </div>
 
-          <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink]">
+          <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] training-stats">
             {initStatus}
             {initStatus === "ready" && step > 0 && (
               <span className="ml-4">
@@ -910,7 +924,7 @@ function InteractiveTrainerSection() {
           </div>
 
           {lossHistory.length > 0 && (
-            <div className="h-[280px] w-full">
+            <div className="h-[280px] w-full training-chart">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={lossHistory}
