@@ -10,12 +10,15 @@ Trained on 32,033 first names, the model learns to generate new name-like string
 $ go run . -steps 10000 -temperature 0.5
 Loaded 32033 names
 Vocab size: 27
-step 100/10000,  avg loss = 3.2709
-step 200/10000,  avg loss = 2.9365
-step 300/10000,  avg loss = 2.7667
+Train: 28829, Val: 3204
+step 100/10000, avg loss = 3.2352
+step 200/10000, avg loss = 3.0156
+step 300/10000, avg loss = 2.8304
+step 400/10000, avg loss = 2.7772
+step 500/10000, avg loss = 2.7604, val loss = 2.9741
 ...
-step 9900/10000, avg loss = 2.3135
-step 10000/10000, avg loss = 2.4475
+step 900/10000, avg loss = 2.6146
+step 1000/10000, avg loss = 2.6686, val loss = 2.8969
 
 --- Generated names (temperature 0.5) ---
  1: mena
@@ -30,7 +33,7 @@ step 10000/10000, avg loss = 2.4475
 10: ancdy
 ```
 
-Loss drops from ~3.27 (random chance) to ~2.20 over 10k steps. The model learns vowel patterns, name-like endings, and reasonable length — genuine pattern recognition with no hand-crafted rules.
+Train loss drops from ~3.27 (random chance) to ~2.67 over 1000 steps, with validation loss tracked every 500 steps. The gap between train and val (~0.2) indicates mild overfitting — the model generalizes but could benefit from more data or regularization.
 
 ## Usage
 

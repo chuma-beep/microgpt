@@ -9,6 +9,75 @@ import (
 	"os"
 )
 
+type Trainer struct {
+	gpt        *GPT
+	tok        *Tokenizer
+	names      []string
+	adam       *Adam
+	paramsFlat []float64
+	gradsFlat  []float64
+	step       int
+}
+
+func NewTrainer(gpt *GPT, tok *Tokenizer, names []string) *Trainer {
+	paramsFlat := make([]float64, 0)
+	for _, m := range gpt.params {
+		paramsFlat = append(paramsFlat, m.data...)
+	}
+	gradsFlat := make([]float64, len(paramsFlat))
+	return &Trainer{
+		gpt:        gpt,
+		tok:        tok,
+		names:      names,
+		adam:       NewAdam(len(paramsFlat)),
+		paramsFlat: paramsFlat,
+		gradsFlat:  gradsFlat,
+	}
+}
+
+func (t *Trainer) Step() float64 {
+	doc := t.names[t.step%len(t.names)]
+	tokens := t.tok.Encode(doc)
+	n := min(blockSize, len(tokens)-1)
+	if n < 1 {
+		t.step++
+		return 0
+	}
+	loss, cache := t.gpt.ForwardSeq(tokens[:n+1])
+	t.gpt.Backward(cache)
+
+	idx := 0
+	for _, gr := range t.gpt.grads {
+		copy(t.gradsFlat[idx:], gr.data)
+		idx += len(gr.data)
+	}
+
+	for i := range t.gradsFlat {
+		if t.gradsFlat[i] > 1.0 {
+			t.gradsFlat[i] = 1.0
+		} else if t.gradsFlat[i] < -1.0 {
+			t.gradsFlat[i] = -1.0
+		}
+	}
+
+	t.adam.Update(t.paramsFlat, t.gradsFlat, 0.001)
+
+	idx = 0
+	for _, m := range t.gpt.params {
+		copy(m.data, t.paramsFlat[idx:idx+len(m.data)])
+		idx += len(m.data)
+	}
+
+	for _, gr := range t.gpt.grads {
+		for i := range gr.data {
+			gr.data[i] = 0.0
+		}
+	}
+
+	t.step++
+	return loss
+}
+
 func saveWeights(path string, params []*matrix) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -91,79 +160,32 @@ func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 			if err := loadWeights(weightsPath, gpt.params); err != nil {
 				panic(err)
 			}
-		} else {
-			// Flatten parameters
-			paramsFlat := make([]float64, 0)
-			for _, m := range gpt.params {
-				paramsFlat = append(paramsFlat, m.data...)
+		}
+
+		var accumLoss float64
+		var accumCount int
+		trainer := NewTrainer(gpt, tok, trainNames)
+		for step := 0; step < steps; step++ {
+			loss := trainer.Step()
+			accumLoss += loss
+			accumCount++
+
+			if step%100 == 99 {
+				avg := accumLoss / float64(accumCount)
+				fmt.Printf("step %d/%d, avg loss = %.4f", step+1, steps, avg)
+				if step%500 == 499 {
+					valLoss := calcValLoss(gpt, tok, valNames)
+					fmt.Printf(", val loss = %.4f", valLoss)
+				}
+				fmt.Println()
+				accumLoss = 0
+				accumCount = 0
 			}
-			gradsFlat := make([]float64, len(paramsFlat))
+		}
 
-			// Adam
-			adam := NewAdam(len(paramsFlat))
-
-			baseLR := 0.001
-
-			var accumLoss float64
-			var accumCount int
-
-			for step := 0; step < steps; step++ {
-				doc := trainNames[step%len(trainNames)]
-				tokens := tok.Encode(doc)
-				n := min(blockSize, len(tokens)-1)
-				if n < 1 {
-					continue
-				}
-				loss, cache := gpt.ForwardSeq(tokens[:n+1])
-
-				// Backward
-				gpt.Backward(cache)
-
-				// Flatten gradients
-				idx := 0
-				for _, gr := range gpt.grads {
-					copy(gradsFlat[idx:], gr.data)
-					idx += len(gr.data)
-				}
-
-				lr := baseLR
-				adam.Update(paramsFlat, gradsFlat, lr)
-
-				// Copy back
-				idx = 0
-				for _, m := range gpt.params {
-					copy(m.data, paramsFlat[idx:idx+len(m.data)])
-					idx += len(m.data)
-				}
-
-				// Zero grads
-				for _, gr := range gpt.grads {
-					for i := range gr.data {
-						gr.data[i] = 0.0
-					}
-				}
-
-				accumLoss += loss
-				accumCount++
-
-				if step%100 == 99 {
-					avg := accumLoss / float64(accumCount)
-					fmt.Printf("step %d/%d, avg loss = %.4f", step+1, steps, avg)
-					if step%500 == 499 {
-						valLoss := calcValLoss(gpt, tok, valNames)
-						fmt.Printf(", val loss = %.4f", valLoss)
-					}
-					fmt.Println()
-					accumLoss = 0
-					accumCount = 0
-				}
-			}
-
-			// Save weights
-			fmt.Printf("Saving weights to %s\n", weightsPath)
-			if err := saveWeights(weightsPath, gpt.params); err != nil {
-				panic(err)
-			}
+		fmt.Printf("Saving weights to %s\n", weightsPath)
+		if err := saveWeights(weightsPath, gpt.params); err != nil {
+			panic(err)
 		}
 	}
 
