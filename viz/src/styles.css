@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+}
+
+@layer base {
+  :root {
+    --ink: oklch(0.27 0.05 265);
+    --paper: oklch(0.985 0.005 90);
+    --rule: oklch(0.82 0.01 90);
+    --muted-ink: oklch(0.55 0.02 265);
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --color-primary: var(--ink);
+    --color-primary-foreground: var(--paper);
+  }
+
+  * {
+    border-color: var(--rule);
+  }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-serif);
+  }
+}
+
+@keyframes attn-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.attn-cell {
+  opacity: 0;
+  animation: attn-fade 220ms linear forwards;
+}
+
+@keyframes caret-blink {
+  0%, 50%   { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+.typewriter-caret {
+  animation: caret-blink 600ms steps(1, end) infinite;
+}
