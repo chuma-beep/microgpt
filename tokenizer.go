@@ -1,93 +1,63 @@
+// tokenizer.go – character level tokenizer with BOS
 package main
 
-import (
-	"sort"
-)
+import "sort"
 
-// Tokenizer is a simple char-level tokenizer
 type Tokenizer struct {
-	CharToIdx map[rune]int
-	IdxToChar []rune
+	CharToIdx map[byte]int
+	IdxToChar []byte
 	BOS       int
-	UNK       int
+	VocabSize int
 }
 
-// NewTokenizer builds vocab from dataset
-func NewTokenizer(texts []string) *Tokenizer {
-	vocabSet := make(map[rune]bool)
-
-	// collect unique runes
-	for _, text := range texts {
-		for _, r := range text {
-			vocabSet[r] = true
+func NewTokenizer(names []string) *Tokenizer {
+	// collect unique characters
+	charSet := make(map[byte]bool)
+	for _, name := range names {
+		for i := 0; i < len(name); i++ {
+			charSet[name[i]] = true
 		}
 	}
-
-	// convert set → sorted slice (deterministic)
-	var chars []rune
-	for r := range vocabSet {
-		chars = append(chars, r)
+	// sort for reproducibility
+	unique := make([]byte, 0, len(charSet))
+	for c := range charSet {
+		unique = append(unique, c)
 	}
-
-	sort.Slice(chars, func(i, j int) bool {
-		return chars[i] < chars[j]
-	})
-
-	// add special tokens at the front
-	// index 0 = BOS, index 1 = UNK
-	idxToChar := []rune{'^', '?'} // you can pick any symbols
-	idxToChar = append(idxToChar, chars...)
-
-	charToIdx := make(map[rune]int)
-	for i, r := range idxToChar {
-		charToIdx[r] = i
+	sort.Slice(unique, func(i, j int) bool { return unique[i] < unique[j] })
+	// build maps
+	charToIdx := make(map[byte]int)
+	idxToChar := make([]byte, len(unique))
+	for i, c := range unique {
+		charToIdx[c] = i
+		idxToChar[i] = c
 	}
-
+	vocabSize := len(unique) + 1
+	BOS := len(unique)
 	return &Tokenizer{
 		CharToIdx: charToIdx,
 		IdxToChar: idxToChar,
-		BOS:       0,
-		UNK:       1,
+		BOS:       BOS,
+		VocabSize: vocabSize,
 	}
 }
 
-// Encode converts string → token IDs
-func (t *Tokenizer) Encode(text string) []int {
-	tokens := make([]int, 0, len(text)+1)
-
-	// prepend BOS
+func (t *Tokenizer) Encode(s string) []int {
+	tokens := make([]int, 0, len(s)+2)
 	tokens = append(tokens, t.BOS)
-
-	for _, r := range text {
-		if id, ok := t.CharToIdx[r]; ok {
-			tokens = append(tokens, id)
-		} else {
-			tokens = append(tokens, t.UNK)
-		}
+	for i := 0; i < len(s); i++ {
+		tokens = append(tokens, t.CharToIdx[s[i]])
 	}
-
+	tokens = append(tokens, t.BOS)
 	return tokens
 }
 
-// Decode converts token IDs → string
-func (t *Tokenizer) Decode(tokens []int) string {
-	out := make([]rune, 0, len(tokens))
-
-	for _, id := range tokens {
-		// skip BOS
-		if id == t.BOS || id == t.UNK {
+func (t *Tokenizer) Decode(ids []int) string {
+	var out []byte
+	for _, id := range ids {
+		if id == t.BOS {
 			continue
 		}
-
-		if id >= 0 && id < len(t.IdxToChar) {
-			out = append(out, t.IdxToChar[id])
-		}
+		out = append(out, t.IdxToChar[id])
 	}
-
 	return string(out)
-}
-
-// VocabSize returns total number of tokens
-func (t *Tokenizer) VocabSize() int {
-	return len(t.IdxToChar)
 }
