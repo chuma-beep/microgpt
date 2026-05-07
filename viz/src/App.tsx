@@ -103,18 +103,18 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-[--rule] py-14">
-      <header className="mb-8 grid grid-cols-12 gap-6">
+    <section className="py-20">
+      <header className="mb-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink]">
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
             Figure {number}
           </div>
-          <h2 className="mt-2 font-serif text-2xl leading-tight text-[--ink]">
+          <h2 className="mt-3 font-serif text-2xl font-medium leading-tight text-[--ink]">
             {title}
           </h2>
         </div>
         {caption && (
-          <p className="col-span-12 font-serif text-[15px] leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
+          <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
             {caption}
           </p>
         )}
@@ -389,8 +389,9 @@ function LossPanel() {
               domain={[0, 10000]}
               ticks={[0, 2000, 4000, 6000, 8000, 10000]}
               stroke={INK}
-              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
               tickLine={{ stroke: INK }}
+              axisLine={{ stroke: INK, strokeWidth: 1 }}
               label={{
                 value: "training step",
                 position: "insideBottom",
@@ -399,7 +400,7 @@ function LossPanel() {
                   fill: INK,
                   fontFamily: "var(--font-serif)",
                   fontStyle: "italic",
-                  fontSize: 13,
+                  fontSize: 12,
                 },
               }}
             />
@@ -407,8 +408,9 @@ function LossPanel() {
               domain={[2.0, 3.5]}
               ticks={[2.0, 2.5, 3.0, 3.5]}
               stroke={INK}
-              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+              tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
               tickLine={{ stroke: INK }}
+              axisLine={{ stroke: INK, strokeWidth: 1 }}
               label={{
                 value: "cross-entropy loss",
                 angle: -90,
@@ -417,7 +419,7 @@ function LossPanel() {
                   fill: INK,
                   fontFamily: "var(--font-serif)",
                   fontStyle: "italic",
-                  fontSize: 13,
+                  fontSize: 12,
                   textAnchor: "middle",
                 },
               }}
@@ -426,7 +428,7 @@ function LossPanel() {
               type="monotone"
               dataKey="train"
               stroke={INK}
-              strokeWidth={1.5}
+              strokeWidth={2}
               dot={false}
               isAnimationActive={true}
               animationDuration={1600}
@@ -436,7 +438,7 @@ function LossPanel() {
               type="monotone"
               dataKey="val"
               stroke={INK}
-              strokeWidth={1.5}
+              strokeWidth={2}
               strokeDasharray="4 3"
               dot={false}
               isAnimationActive={true}
@@ -453,7 +455,7 @@ function LossPanel() {
                 style: {
                   fill: INK,
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: 10,
                 },
               }}
             />
@@ -467,18 +469,13 @@ function LossPanel() {
                 style: {
                   fill: INK,
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: 10,
                 },
               }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-4 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Solid: training loss. Dashed: held-out validation loss. val loss tracks
-        train loss without diverging, consistent with underfitting at this model
-        size.
-      </p>
     </div>
   );
 }
@@ -788,17 +785,17 @@ function InteractiveTrainerSection() {
   };
 
   return (
-    <section className="border-t border-[--rule] py-14">
-      <header className="mb-8 grid grid-cols-12 gap-6">
+    <section className="py-20">
+      <header className="mb-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink]">
+          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
             Figure 7
           </div>
-          <h2 className="mt-2 font-serif text-2xl leading-tight text-[--ink]">
+          <h2 className="mt-3 font-serif text-2xl font-medium leading-tight text-[--ink]">
             Interactive training
           </h2>
         </div>
-        <p className="col-span-12 font-serif text-[15px] leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
+        <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
           Train the model in your browser. The Go/WASM implementation runs
           entirely client-side — every forward pass, backward pass, and
           parameter update happens in real time.
@@ -873,21 +870,23 @@ function InteractiveTrainerSection() {
                     domain={[0, 10000]}
                     ticks={[0, 2000, 4000, 6000, 8000, 10000]}
                     stroke={INK}
-                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
                     tickLine={{ stroke: INK }}
+                    axisLine={{ stroke: INK, strokeWidth: 1 }}
                   />
                   <YAxis
                     domain={[2.0, 3.5]}
                     ticks={[2.0, 2.5, 3.0, 3.5]}
                     stroke={INK}
-                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 11 }}
+                    tick={{ fill: INK, fontFamily: "var(--font-mono)", fontSize: 10, fontStyle: "italic" }}
                     tickLine={{ stroke: INK }}
+                    axisLine={{ stroke: INK, strokeWidth: 1 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="loss"
                     stroke={INK}
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     dot={false}
                   />
                 </LineChart>
@@ -921,9 +920,10 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-[--paper] text-[--ink]">
-      <div className="mx-auto max-w-5xl px-8 py-20">
+      <div className="fixed left-8 top-0 bottom-0 w-px bg-[--rule] pointer-events-none z-0" />
+      <div className="relative z-10 mx-auto max-w-5xl px-8 py-20">
         <header className="mb-16 border-b border-[--ink] pb-10">
-          <div className="font-mono text-[11px] uppercase tracking-[0.22er] text-[--muted-ink]">
+          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
             Appendix · vol. 1 · §3.2
           </div>
           <h1 className="mt-4 font-serif text-5xl leading-[1.1] tracking-tight text-[--ink]">
@@ -939,7 +939,7 @@ export default function App() {
             below corresponds to one stage of the computation. Hover, type, and
             sample to inspect the model's internal state.
           </p>
-          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18er] text-[--muted-ink]">
+          <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
             vocab 27 · d_model 16 · 4 head · 1 block
           </div>
         </header>
@@ -1000,7 +1000,7 @@ export default function App() {
 
         <InteractiveTrainerSection />
 
-        <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18er] text-[--muted-ink]">
+        <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
           end of appendix · figures rendered live · no backend
         </footer>
       </div>
