@@ -1,5 +1,3 @@
-Here's a clean rewrite based only on what actually happened:
-
 ---
 
 # microgpt
