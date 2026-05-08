@@ -1043,9 +1043,8 @@ const TOOLTIPS: Record<number, string> = {
 function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
-  // Note: Removed custom tooltip state (hoveredBlock, tappedBlock, isMobile)
-  // shadcn/ui Tooltip handles mobile tap, positioning, z-index, and accessibility automatically
-  // Removed: touchend listener for dismissing tooltip on mobile - no longer needed
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -1094,9 +1093,17 @@ function ArchitecturePanel() {
                     style={{ position: "relative" }}
                     data-arch-block={i}
                   >
-                    <div
-                      className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                    <button
+                      type="button"
+                      className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 text-left ${visibleBlocks[i] ? "visible" : ""}`}
                       style={{ animationDelay: `${i * 80}ms` }}
+                      onClick={() => {
+                        if (selectedBlock === i) {
+                          setSelectedBlock(null);
+                        } else {
+                          setSelectedBlock(i);
+                        }
+                      }}
                     >
                       <span className="block-label font-serif text-[15px] text-[--ink]">
                         {b.name}
@@ -1104,7 +1111,14 @@ function ArchitecturePanel() {
                       <span className="font-mono text-[11px] text-[--muted-ink]">
                         {b.params}
                       </span>
-                    </div>
+                    </button>
+                    {selectedBlock === i && (
+                      <div className="mb-4 rounded border border-[--ink] bg-[#FAFAF7] p-3 md:hidden">
+                        <p className="font-serif text-[13px] leading-[1.5]">
+                          {TOOLTIPS[i]}
+                        </p>
+                      </div>
+                    )}
                     {i < BLOCKS.length - 1 && visibleArrows[i] && (
                       <div className="flex flex-col items-center">
                         <div
