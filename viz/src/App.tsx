@@ -867,7 +867,7 @@ function LossPanel() {
 
   return (
     <div
-      className={`col-span-12 loss-panel-wrapper ${visible ? "visible" : ""}`}
+      className={`col-span-12 md:col-span-10 md:col-start-1 loss-panel-wrapper ${visible ? "visible" : ""}`}
     >
       <div
         className={`h-[360px] w-full loss-chart-container relative ${visible ? "visible" : ""}`}
