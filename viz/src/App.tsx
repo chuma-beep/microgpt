@@ -812,6 +812,174 @@ function ArchitecturePanel() {
   );
 }
 
+function InteractiveTrainerDesktop(props: {
+  wasmReady: boolean;
+  initStatus: string;
+  training: boolean;
+  step: number;
+  loss: number | null;
+  lossHistory: { step: number; loss: number }[];
+  generated: { step: number; name: string }[];
+  showGenerate: boolean;
+  setTraining: (v: boolean) => void;
+  setStep: (v: number) => void;
+  setLoss: (v: number | null) => void;
+  setLossHistory: (v: { step: number; loss: number }[]) => void;
+  setGenerated: (v: { step: number; name: string }[]) => void;
+  setShowGenerate: (v: boolean) => void;
+  setInitStatus: (v: string) => void;
+  handleReset: () => void;
+  startTraining: () => void;
+  handleGenerate: () => void;
+}) {
+  const {
+    wasmReady,
+    initStatus,
+    training,
+    step,
+    loss,
+    lossHistory,
+    generated,
+    showGenerate,
+    setTraining,
+    setStep,
+    setLoss,
+    setLossHistory,
+    setGenerated,
+    setShowGenerate,
+    setInitStatus,
+    handleReset,
+    startTraining,
+    handleGenerate,
+  } = props;
+
+  return (
+    <div className="grid grid-cols-12 gap-6">
+      <div className="col-span-12 lg:col-span-6">
+        <div className="mb-4 flex flex-wrap gap-3 training-controls">
+          <button
+            onClick={handleReset}
+            disabled={!wasmReady}
+            className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+          >
+            reset
+          </button>
+          {!training && step === 0 && (
+            <button
+              onClick={startTraining}
+              disabled={!wasmReady || initStatus !== "ready"}
+              className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:text-[--muted-ink]"
+            >
+              start training
+            </button>
+          )}
+          {training && (
+            <button
+              onClick={() => setTraining(false)}
+              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
+            >
+              stop
+            </button>
+          )}
+          {!training && step > 0 && step < 10000 && (
+            <button
+              onClick={() => setTraining(true)}
+              disabled={!wasmReady}
+              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+            >
+              resume
+            </button>
+          )}
+          <button
+            onClick={handleGenerate}
+            disabled={!wasmReady || !showGenerate}
+            className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink] training-generate-btn"
+          >
+            generate
+          </button>
+        </div>
+
+        <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] training-stats">
+          {initStatus}
+          {initStatus === "ready" && step > 0 && (
+            <span className="ml-4">
+              step {step} / 10000 · loss {loss?.toFixed(4) ?? "—"}
+            </span>
+          )}
+        </div>
+
+        {lossHistory.length > 0 && (
+          <div className="h-[280px] w-full training-chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={lossHistory}
+                margin={{ top: 20, right: 40, left: 20, bottom: 30 }}
+              >
+                <CartesianGrid
+                  stroke={RULE}
+                  strokeDasharray="0"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="step"
+                  type="number"
+                  domain={[0, 10000]}
+                  ticks={[0, 2000, 4000, 6000, 8000, 10000]}
+                  stroke={INK}
+                  tick={{
+                    fill: INK,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontStyle: "italic",
+                  }}
+                  tickLine={{ stroke: INK }}
+                  axisLine={{ stroke: INK, strokeWidth: 1 }}
+                />
+                <YAxis
+                  domain={[2.0, 3.5]}
+                  ticks={[2.0, 2.5, 3.0, 3.5]}
+                  stroke={INK}
+                  tick={{
+                    fill: INK,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontStyle: "italic",
+                  }}
+                  tickLine={{ stroke: INK }}
+                  axisLine={{ stroke: INK, strokeWidth: 1 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="loss"
+                  stroke={INK}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="col-span-12 lg:col-span-6">
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink] mb-3">
+          generated samples
+        </div>
+        <div className="font-mono text-sm">
+          {generated.length === 0 && (
+            <div className="text-[--muted-ink]">— no samples yet —</div>
+          )}
+          {generated.map((g, i) => (
+            <div key={i} className="border-b border-[--rule] py-1">
+              <span className="text-[--muted-ink]">[{g.step}]</span> {g.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InteractiveTrainerSection() {
   const [wasmReady, setWasmReady] = useState(false);
   const [initStatus, setInitStatus] = useState<string>("initializing model...");
@@ -825,6 +993,9 @@ function InteractiveTrainerSection() {
     [],
   );
   const [showGenerate, setShowGenerate] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileInitialized, setMobileInitialized] = useState(false);
+  const [mobileNames, setMobileNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (window.wasmReady) {
@@ -837,6 +1008,18 @@ function InteractiveTrainerSection() {
         }
       });
     }
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile =
+        window.innerWidth < 768 ||
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const handleReset = () => {
@@ -854,6 +1037,25 @@ function InteractiveTrainerSection() {
         setInitStatus("ready");
       }
     });
+  };
+
+  const handleMobileGenerate = () => {
+    if (!mobileInitialized) {
+      setInitStatus("Initializing...");
+      window.goInit((err: string | null, result: string) => {
+        if (err) {
+          setInitStatus("error: " + err);
+        } else {
+          setInitStatus("ready");
+          setMobileInitialized(true);
+          const name = window.goGenerate(0.5);
+          setMobileNames((prev) => [...prev, name]);
+        }
+      });
+      return;
+    }
+    const name = window.goGenerate(0.5);
+    setMobileNames((prev) => [...prev, name]);
   };
 
   const startTraining = () => {
@@ -925,129 +1127,56 @@ function InteractiveTrainerSection() {
         </p>
       </header>
 
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-6">
-          <div className="mb-4 flex flex-wrap gap-3 training-controls">
+      {isMobile ? (
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12">
             <button
-              onClick={handleReset}
-              disabled={!wasmReady}
-              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+              onClick={handleMobileGenerate}
+              disabled={!wasmReady || initStatus === "Initializing..."}
+              className="btn-hover w-full border border-[--ink] bg-[--ink] px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
             >
-              reset
+              Generate Name
             </button>
-            {!training && step === 0 && (
-              <button
-                onClick={startTraining}
-                disabled={!wasmReady || initStatus !== "ready"}
-                className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:text-[--muted-ink]"
-              >
-                start training
-              </button>
-            )}
-            {training && (
-              <button
-                onClick={() => setTraining(false)}
-                className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
-              >
-                stop
-              </button>
-            )}
-            {!training && step > 0 && step < 10000 && (
-              <button
-                onClick={() => setTraining(true)}
-                disabled={!wasmReady}
-                className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
-              >
-                resume
-              </button>
-            )}
-            <button
-              onClick={handleGenerate}
-              disabled={!wasmReady || !showGenerate}
-              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink] training-generate-btn"
+            <div
+              className="mt-3 font-mono text-[11px] italic text-[--muted-ink]"
+              style={{ opacity: 0.5 }}
             >
-              generate
-            </button>
-          </div>
-
-          <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] training-stats">
-            {initStatus}
-            {initStatus === "ready" && step > 0 && (
-              <span className="ml-4">
-                step {step} / 10000 · loss {loss?.toFixed(4) ?? "—"}
-              </span>
-            )}
-          </div>
-
-          {lossHistory.length > 0 && (
-            <div className="h-[280px] w-full training-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={lossHistory}
-                  margin={{ top: 20, right: 40, left: 20, bottom: 30 }}
-                >
-                  <CartesianGrid
-                    stroke={RULE}
-                    strokeDasharray="0"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="step"
-                    type="number"
-                    domain={[0, 10000]}
-                    ticks={[0, 2000, 4000, 6000, 8000, 10000]}
-                    stroke={INK}
-                    tick={{
-                      fill: INK,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      fontStyle: "italic",
-                    }}
-                    tickLine={{ stroke: INK }}
-                    axisLine={{ stroke: INK, strokeWidth: 1 }}
-                  />
-                  <YAxis
-                    domain={[2.0, 3.5]}
-                    ticks={[2.0, 2.5, 3.0, 3.5]}
-                    stroke={INK}
-                    tick={{
-                      fill: INK,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      fontStyle: "italic",
-                    }}
-                    tickLine={{ stroke: INK }}
-                    axisLine={{ stroke: INK, strokeWidth: 1 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="loss"
-                    stroke={INK}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              live training available on desktop
             </div>
-          )}
-        </div>
-
-        <div className="col-span-12 lg:col-span-6">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink] mb-3">
-            generated samples
           </div>
-          <div className="font-mono text-sm">
-            {generated.length === 0 && (
-              <div className="text-[--muted-ink]">— no samples yet —</div>
+          <div className="col-span-12 mt-6 font-mono text-sm">
+            {mobileNames.length === 0 && (
+              <div className="text-[--muted-ink]">— no names yet —</div>
             )}
-            {generated.map((g, i) => (
+            {mobileNames.map((name, i) => (
               <div key={i} className="border-b border-[--rule] py-1">
-                <span className="text-[--muted-ink]">[{g.step}]</span> {g.name}
+                {name}
               </div>
             ))}
           </div>
         </div>
-      </div>
+      ) : (
+        <InteractiveTrainerDesktop
+          wasmReady={wasmReady}
+          initStatus={initStatus}
+          training={training}
+          step={step}
+          loss={loss}
+          lossHistory={lossHistory}
+          generated={generated}
+          showGenerate={showGenerate}
+          setTraining={setTraining}
+          setStep={setStep}
+          setLoss={setLoss}
+          setLossHistory={setLossHistory}
+          setGenerated={setGenerated}
+          setShowGenerate={setShowGenerate}
+          setInitStatus={setInitStatus}
+          handleReset={handleReset}
+          startTraining={startTraining}
+          handleGenerate={handleGenerate}
+        />
+      )}
     </section>
   );
 }
