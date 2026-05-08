@@ -1124,7 +1124,7 @@ function ArchitecturePanel() {
               style={{ animationDelay: `${i * 80}ms` }}
               onMouseEnter={() => !isMobile && setHoveredBlock(i)}
               onMouseLeave={() => !isMobile && setHoveredBlock(null)}
-              onClick={(e) => {
+              onTouchEnd={(e) => {
                 e.stopPropagation();
                 handleBlockTap(i);
               }}
