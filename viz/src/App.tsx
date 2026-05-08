@@ -8,6 +8,12 @@ import {
   ResponsiveContainer,
   ReferenceDot,
 } from "recharts";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const INK = "#1B2A4A";
 const PAPER = "#FAFAF7";
@@ -1037,30 +1043,9 @@ const TOOLTIPS: Record<number, string> = {
 function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
-  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
-  const [tappedBlock, setTappedBlock] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  useEffect(() => {
-    const dismissOnTouchEnd = (e: TouchEvent) => {
-      if (!isMobile || tappedBlock === null) return;
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-arch-block]")) {
-        setTappedBlock(null);
-      }
-    };
-    document.addEventListener("touchend", dismissOnTouchEnd);
-    return () => document.removeEventListener("touchend", dismissOnTouchEnd);
-  }, [isMobile, tappedBlock]);
+  // Note: Removed custom tooltip state (hoveredBlock, tappedBlock, isMobile)
+  // shadcn/ui Tooltip handles mobile tap, positioning, z-index, and accessibility automatically
+  // Removed: touchend listener for dismissing tooltip on mobile - no longer needed
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -1096,74 +1081,62 @@ function ArchitecturePanel() {
     });
   }, []);
 
-  const handleBlockTap = (index: number) => {
-    if (isMobile) {
-      setTappedBlock(tappedBlock === index ? null : index);
-    }
-  };
-
-  const showTooltip = (index: number) => {
-    if (isMobile) {
-      return tappedBlock === index;
-    }
-    return hoveredBlock === index;
-  };
-
   return (
     <div className="col-span-12 arch-diagram-container">
-      <div className="flex flex-col items-stretch gap-0 arch-complex">
-        {BLOCKS.map((b, i) => (
-          <div
-            key={i}
-            className="flex flex-col items-center arch-block-wrapper"
-            style={{ position: "relative" }}
-            data-arch-block={i}
-          >
-            <div
-              className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
-              style={{ animationDelay: `${i * 80}ms` }}
-              onMouseEnter={() => !isMobile && setHoveredBlock(i)}
-              onMouseLeave={() => !isMobile && setHoveredBlock(null)}
-              onTouchEnd={(e) => {
-                e.stopPropagation();
-                handleBlockTap(i);
-              }}
-            >
-              <span className="block-label font-serif text-[15px] text-[--ink]">
-                {b.name}
-              </span>
-              <span className="font-mono text-[11px] text-[--muted-ink]">
-                {b.params}
-              </span>
-            </div>
-            {TOOLTIPS[i] && (
-              <div
-                className={`arch-tooltip${showTooltip(i) ? " visible" : ""}`}
+      <TooltipProvider delay={300}>
+        <div className="flex flex-col items-stretch gap-0 arch-complex">
+          {BLOCKS.map((b, i) => (
+            <Tooltip key={i}>
+              <TooltipTrigger>
+                <div
+                  className="flex flex-col items-center arch-block-wrapper"
+                  style={{ position: "relative" }}
+                  data-arch-block={i}
+                >
+                  <div
+                    className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                    style={{ animationDelay: `${i * 80}ms` }}
+                  >
+                    <span className="block-label font-serif text-[15px] text-[--ink]">
+                      {b.name}
+                    </span>
+                    <span className="font-mono text-[11px] text-[--muted-ink]">
+                      {b.params}
+                    </span>
+                  </div>
+                  {i < BLOCKS.length - 1 && visibleArrows[i] && (
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="arrow-animate h-6 w-px bg-[--ink] visible"
+                        style={{ animationDelay: `${i * 80 + 300}ms` }}
+                      />
+                      <div
+                        className="h-0 w-0 arrow-animate visible"
+                        style={{
+                          borderLeft: "4px solid transparent",
+                          borderRight: "4px solid transparent",
+                          borderTop: `5px solid ${INK}`,
+                          marginTop: -1,
+                          animationDelay: `${i * 80 + 350}ms`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                sideOffset={5}
+                className="max-w-[280px] rounded-none border border-[--ink] bg-[#FAFAF7] text-foreground"
               >
-                {TOOLTIPS[i]}
-              </div>
-            )}
-            {i < BLOCKS.length - 1 && visibleArrows[i] && (
-              <div className="flex flex-col items-center">
-                <div
-                  className="arrow-animate h-6 w-px bg-[--ink] visible"
-                  style={{ animationDelay: `${i * 80 + 300}ms` }}
-                />
-                <div
-                  className="h-0 w-0 arrow-animate visible"
-                  style={{
-                    borderLeft: "4px solid transparent",
-                    borderRight: "4px solid transparent",
-                    borderTop: `5px solid ${INK}`,
-                    marginTop: -1,
-                    animationDelay: `${i * 80 + 350}ms`,
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+                <p className="font-serif text-[13px] leading-[1.5]">
+                  {TOOLTIPS[i]}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
         Total ≈ 6.1 k parameters. A single attention head, one transformer
         block, no layer stacking. The smallest configuration that still learns
