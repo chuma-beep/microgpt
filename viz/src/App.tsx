@@ -1127,7 +1127,7 @@ function ArchitecturePanel() {
                 }
               />
               <TooltipContent
-                side="right"
+                side="top"
                 sideOffset={5}
                 className="max-w-[280px] rounded-none border border-[--ink] bg-[#FAFAF7] text-foreground"
               >
