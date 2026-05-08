@@ -322,11 +322,11 @@
   z-index: 0;
 }
 
-.btn-ink:hover:not(:disabled)::before {
+.btn-ink:not(input):hover:not(:disabled)::before {
   width: 100%;
 }
 
-.btn-ink:hover:not(:disabled) {
+.btn-ink:not(input):hover:not(:disabled) {
   color: var(--paper);
 }
 
