@@ -1051,6 +1051,18 @@ function ArchitecturePanel() {
   }, []);
 
   useEffect(() => {
+    const dismissOnTouchEnd = (e: TouchEvent) => {
+      if (!isMobile || tappedBlock === null) return;
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-arch-block]")) {
+        setTappedBlock(null);
+      }
+    };
+    document.addEventListener("touchend", dismissOnTouchEnd);
+    return () => document.removeEventListener("touchend", dismissOnTouchEnd);
+  }, [isMobile, tappedBlock]);
+
+  useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -1105,13 +1117,17 @@ function ArchitecturePanel() {
             key={i}
             className="flex flex-col items-center arch-block-wrapper"
             style={{ position: "relative" }}
+            data-arch-block={i}
           >
             <div
               className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
               style={{ animationDelay: `${i * 80}ms` }}
               onMouseEnter={() => !isMobile && setHoveredBlock(i)}
               onMouseLeave={() => !isMobile && setHoveredBlock(null)}
-              onClick={() => handleBlockTap(i)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleBlockTap(i);
+              }}
             >
               <span className="block-label font-serif text-[15px] text-[--ink]">
                 {b.name}

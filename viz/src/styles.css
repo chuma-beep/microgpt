@@ -656,7 +656,7 @@ input:hover,
     top: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(-6px);
-    max-width: 280px;
+    max-width: 260px;
     width: max-content;
   }
 
