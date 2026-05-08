@@ -1160,11 +1160,12 @@ function ArchitecturePanel() {
           </div>
         </TooltipProvider>
       ) : (
-        // Mobile: clickable blocks, no tooltip, plus info box under diagram
+        // Mobile: clickable blocks, and info box appears directly under the clicked block
         <>
-          <div className="flex flex-col items-stretch gap-0 arch-complex">
+          <div className="flex flex-col items-stretch gap-0 arch-mobile">
             {BLOCKS.map((b, i) => (
               <div key={i} className="flex flex-col items-center">
+                {/* Block itself */}
                 <div
                   className={`block-animate relative flex w-full max-w-md cursor-pointer items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
                   style={{ animationDelay: `${i * 80}ms` }}
@@ -1177,6 +1178,8 @@ function ArchitecturePanel() {
                     {b.params}
                   </span>
                 </div>
+
+                {/* Arrow (if not last) */}
                 {i < BLOCKS.length - 1 && visibleArrows[i] && (
                   <div className="flex flex-col items-center">
                     <div
@@ -1195,27 +1198,27 @@ function ArchitecturePanel() {
                     />
                   </div>
                 )}
+
+                {/* Info box – appears directly under this block */}
+                {selectedBlock === i && (
+                  <div className="mt-4 w-full max-w-md border border-[--ink] bg-[--paper] p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="font-serif text-[13px] leading-[1.5] text-[--ink]">
+                        {TOOLTIPS[i]}
+                      </div>
+                      <button
+                        onClick={closeBox}
+                        className="ml-4 text-[--muted-ink] hover:text-[--ink]"
+                        aria-label="Close"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
-
-          {/* Mobile info box – appears under the diagram when a block is clicked */}
-          {selectedBlock !== null && (
-            <div className="mt-6 border border-[--ink] bg-[--paper] p-4">
-              <div className="flex items-start justify-between">
-                <div className="font-serif text-[13px] leading-[1.5] text-[--ink]">
-                  {TOOLTIPS[selectedBlock]}
-                </div>
-                <button
-                  onClick={closeBox}
-                  className="ml-4 text-[--muted-ink] hover:text-[--ink]"
-                  aria-label="Close"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
@@ -1225,27 +1228,30 @@ function ArchitecturePanel() {
         block, no layer stacking. The smallest configuration that still learns
         plausible English-looking name morphology.
       </p>
-      <div className="hidden arch-simple-list simplified-version">
-        {BLOCKS.map((b, i) => (
-          <div key={i}>
-            <div className="arch-simple-item">
-              <div className="font-serif text-[15px] text-[--ink]">
-                {b.name}
+
+      {/* Simplified version – only shown on desktop */}
+      {!isMobile && (
+        <div className="hidden arch-simple-list simplified-version">
+          {BLOCKS.map((b, i) => (
+            <div key={i}>
+              <div className="arch-simple-item">
+                <div className="font-serif text-[15px] text-[--ink]">
+                  {b.name}
+                </div>
+                <div className="font-mono text-[11px] text-[--muted-ink]">
+                  {b.params}
+                </div>
               </div>
-              <div className="font-mono text-[11px] text-[--muted-ink]">
-                {b.params}
-              </div>
+              {i < BLOCKS.length - 1 && (
+                <div className="arch-simple-arrow">↓</div>
+              )}
             </div>
-            {i < BLOCKS.length - 1 && (
-              <div className="arch-simple-arrow">↓</div>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
 
 function InteractiveTrainerDesktop(props: {
   wasmReady: boolean;
