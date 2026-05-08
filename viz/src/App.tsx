@@ -729,20 +729,25 @@ function LossPanel() {
               dataKey="train"
               stroke={INK}
               strokeWidth={2}
+              strokeDasharray="2000"
               dot={false}
               isAnimationActive={false}
               className={lineDrawn ? "loss-line" : ""}
+              style={{ transition: "stroke-dashoffset 1.2s linear" }}
             />
             <Line
               type="monotone"
               dataKey="val"
               stroke={INK}
               strokeWidth={2}
-              strokeDasharray="4 3"
+              strokeDasharray="2000"
               dot={false}
               isAnimationActive={false}
               className={lineDrawn ? "loss-line" : ""}
-              style={{ animationDelay: "200ms" }}
+              style={{
+                transition: "stroke-dashoffset 1.2s linear",
+                transitionDelay: "200ms",
+              }}
             />
             <ReferenceDot
               x={10000}

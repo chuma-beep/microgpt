@@ -449,7 +449,7 @@ input:hover,
 
 .loss-panel-wrapper {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(30px);
   transition:
     opacity 600ms ease-in-out,
     transform 600ms ease-in-out;
@@ -462,16 +462,16 @@ input:hover,
 
 .loss-chart-container {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(30px) scale(0.98);
   transition:
-    opacity 600ms ease-in-out,
-    transform 600ms ease-in-out;
-  transition-delay: 100ms;
+    opacity 800ms ease-in-out,
+    transform 800ms ease-in-out;
+  transition-delay: 150ms;
 }
 
 .loss-chart-container.visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .loss-axis-label {
