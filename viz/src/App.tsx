@@ -1417,6 +1417,7 @@ function InteractiveTrainerDesktop(props: {
 }
 
 function InteractiveTrainerSection() {
+  const [showInfo, setShowInfo] = useState(false);
   const [wasmReady, setWasmReady] = useState(false);
   const [initStatus, setInitStatus] = useState<string>("initializing model...");
   const [training, setTraining] = useState(false);
@@ -1557,16 +1558,41 @@ function InteractiveTrainerSection() {
           <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
             Figure 7
           </div>
-          <h2 className="mt-3 font-serif text-2xl font-medium leading-tight text-[--ink]">
-            Interactive training
-          </h2>
+          <div className="mt-3 flex items-center gap-2">
+            <h2 className="font-serif text-2xl font-medium leading-tight text-[--ink]">
+              Interactive training
+            </h2>
+            <button
+              onClick={() => setShowInfo(!showInfo)}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[--ink] text-[--ink] hover:bg-[--ink] hover:text-[--paper] transition-colors"
+              aria-label="How this works"
+            >
+              <span className="text-sm font-mono font-bold">?</span>
+            </button>
+          </div>
         </div>
         <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
-          Train the model in your browser. The Go/WASM implementation runs
-          entirely client-side — every forward pass, backward pass, and
-          parameter update happens in real time.
+          Train the model in your browser. The Go/WASM implementation runs entirely client-side — every forward pass, backward pass, and parameter update happens in real time.
         </p>
       </header>
+
+      {/* Toggle info box */}
+      {showInfo && (
+        <div className="mb-8 grid grid-cols-12 gap-6">
+          <div className="col-span-12 md:col-span-7 md:col-start-5">
+            <div className="border-l-2 border-[--ink] pl-4 font-serif text-sm leading-relaxed text-[--muted-ink]">
+              <p className="mb-2"><strong>How it works in your browser:</strong></p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>The model is compiled from Go to WebAssembly (WASM) and runs inside your browser’s JavaScript engine.</li>
+                <li>All training loops, matrix operations, and parameter updates happen client‑side – no data leaves your machine.</li>
+                <li>You can reset, stop, resume, and generate names at any step.</li>
+                <li>The loss curve and generated samples update in real time as training progresses.</li>
+              </ul>
+              <p className="mt-2 text-xs italic">Try the “generate” button after ~1000 steps to see plausible names.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isMobile ? (
         <div className="grid grid-cols-12 gap-6">
@@ -1621,6 +1647,7 @@ function InteractiveTrainerSection() {
     </section>
   );
 }
+
 
 function AnimatedTitle({ children }: { children: React.ReactNode }) {
   const text = typeof children === "string" ? children : "";
