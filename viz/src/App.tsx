@@ -998,7 +998,7 @@ function InteractiveTrainerSection() {
   const [mobileNames, setMobileNames] = useState<string[]>([]);
 
   useEffect(() => {
-    if (window.wasmReady) {
+    const init = () => {
       setWasmReady(true);
       window.goInit((err: string | null, result: string) => {
         if (err) {
@@ -1007,6 +1007,11 @@ function InteractiveTrainerSection() {
           setInitStatus("ready");
         }
       });
+    };
+    if (window.wasmReady) {
+      init();
+    } else {
+      window.addEventListener("wasmReady", init);
     }
   }, []);
 
