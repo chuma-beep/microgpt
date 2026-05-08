@@ -54,7 +54,7 @@ function softmaxRow(scores: number[]) {
   return exps.map((e) => e / sum);
 }
 
-function attentionMatrix(tokens: number[]) {
+function attentionMatrix(tokens: number[], headSeed: number = 0) {
   const n = tokens.length;
   const rows: number[][] = [];
   for (let i = 0; i < n; i++) {
@@ -64,7 +64,7 @@ function attentionMatrix(tokens: number[]) {
         scores.push(-Infinity);
       } else {
         const s =
-          (hashFloat(tokens[i] * 13 + tokens[j] * 7 + i + j) - 0.3) * 4 +
+          (hashFloat(tokens[i] * 13 + tokens[j] * 7 + i + j + headSeed * 100) - 0.3) * 4 +
           (i === j ? 0.5 : 0);
         scores.push(s);
       }
@@ -73,6 +73,7 @@ function attentionMatrix(tokens: number[]) {
   }
   return rows;
 }
+
 
 const LOSS_DATA = [
   { step: 100, train: 3.27, val: 3.04 },
@@ -445,6 +446,7 @@ function EmbeddingPanel({ name }: { name: string }) {
   );
 }
 
+
 function AttentionPanel({ name }: { name: string }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -463,27 +465,28 @@ function AttentionPanel({ name }: { name: string }) {
     return ["·"].concat(clean.split("")).concat(["·"]);
   }, [name]);
 
-  const matrix = useMemo(() => attentionMatrix(tokens), [tokens]);
-  const [hover, setHover] = useState<{
-    i: number;
-    j: number;
-    value: number;
-  } | null>(null);
-  const [touched, setTouched] = useState<{ i: number; j: number } | null>(null);
-  const cell = isMobile ? 20 : 28;
+  // Generate 4 different attention matrices (one per head)
+  const headsMatrices = useMemo(() => {
+    const heads = [];
+    for (let h = 0; h < 4; h++) {
+      heads.push(attentionMatrix(tokens, h));
+    }
+    return heads;
+  }, [tokens]);
+
+  const [hover, setHover] = useState<{ i: number; j: number; head: number; value: number } | null>(null);
+  const [touched, setTouched] = useState<{ i: number; j: number; head: number } | null>(null);
+  const cell = isMobile ? 18 : 24;
 
   const [cellsVisible, setCellsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
       setCellsVisible(true);
       return;
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -493,88 +496,97 @@ function AttentionPanel({ name }: { name: string }) {
       },
       { threshold: 0.3 },
     );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
+    if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
-  return (
-    <div className="col-span-12 lg:col-span-8">
-      <div
-        className="relative inline-block attention-container"
-        ref={containerRef}
-      >
-        <div className="ml-7 flex">
-          {labels.map((c, j) => (
-            <div
-              key={j}
-              className="flex items-end justify-center font-mono text-[11px] text-[--muted-ink]"
-              style={{ width: cell, height: 20 }}
-            >
-              {c}
-            </div>
-          ))}
-        </div>
-        <div className="flex overflow-x-auto">
-          <div className="flex flex-col">
-            {labels.map((c, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-end pr-2 font-mono text-[11px] text-[--muted-ink]"
-                style={{ width: 28, height: cell }}
-              >
+  const renderHead = (matrix: number[][], headIdx: number) => {
+    const n = matrix.length;
+    return (
+      <div className="flex flex-col items-center">
+        <div className="font-mono text-[10px] text-[--muted-ink] mb-1">Head {headIdx + 1}</div>
+        <div className="relative inline-block">
+          <div className="ml-7 flex">
+            {labels.map((c, j) => (
+              <div key={j} className="flex items-end justify-center font-mono text-[9px] text-[--muted-ink]" style={{ width: cell, height: 16 }}>
                 {c}
               </div>
             ))}
           </div>
-          <div className="border border-[--ink]">
-            {matrix.map((row, i) => (
-              <div key={i} className="flex">
-                {row.map((w, j) => {
-                  const op = isFinite(w) ? w : 0;
-                  const order = i * row.length + j;
-                  const isHovered =
-                    (hover && hover.i === i && hover.j === j) ||
-                    (touched && touched.i === i && touched.j === j);
-
-                  return (
-                    <div
-                      key={j}
-                      onMouseEnter={() => setHover({ i, j, value: w })}
-                      onMouseLeave={() => setHover(null)}
-                      onTouchStart={() => setTouched({ i, j })}
-                      onTouchEnd={() => setTouched(null)}
-                      className={`attn-cell relative border border-[--rule] ${cellsVisible ? "animate" : ""}`}
-                      style={{
-                        width: cell,
-                        height: cell,
-                        backgroundColor: `rgba(27,42,74,${(op * 0.95).toFixed(3)})`,
-                        animationDelay: cellsVisible
-                          ? `${order * 20}ms`
-                          : "0ms",
-                      }}
-                    >
-                      {isHovered && (
-                        <div
-                          className={`attn-tooltip ${isHovered ? "visible" : ""}`}
-                        >
-                          {matrix[i][j].toFixed(3)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="flex">
+            <div className="flex flex-col">
+              {labels.map((c, i) => (
+                <div key={i} className="flex items-center justify-end pr-1 font-mono text-[9px] text-[--muted-ink]" style={{ width: 20, height: cell }}>
+                  {c}
+                </div>
+              ))}
+            </div>
+            <div className="border border-[--ink]">
+              {matrix.map((row, i) => (
+                <div key={i} className="flex">
+                  {row.map((w, j) => {
+                    const op = isFinite(w) ? w : 0;
+                    const isHovered =
+                      (hover && hover.i === i && hover.j === j && hover.head === headIdx) ||
+                      (touched && touched.i === i && touched.j === j && touched.head === headIdx);
+                    return (
+                      <div
+                        key={j}
+                        onMouseEnter={() => setHover({ i, j, head: headIdx, value: w })}
+                        onMouseLeave={() => setHover(null)}
+                        onTouchStart={() => setTouched({ i, j, head: headIdx })}
+                        onTouchEnd={() => setTouched(null)}
+                        className="attn-cell relative border border-[--rule]"
+                        style={{
+                          width: cell,
+                          height: cell,
+                          backgroundColor: `rgba(27,42,74,${(op * 0.95).toFixed(3)})`,
+                        }}
+                      >
+                        {isHovered && (
+                          <div className="attn-tooltip visible">{matrix[i][j].toFixed(3)}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div className="col-span-12 lg:col-span-8" ref={containerRef}>
+      <div className={`grid ${isMobile ? "grid-cols-1 gap-8" : "grid-cols-2 gap-6"}`}>
+        {headsMatrices.map((matrix, idx) => renderHead(matrix, idx))}
+      </div>
+      {/* Equation block */}
+{/* Equation block – fixed for JSX */}
+<details className="mt-6 cursor-pointer">
+  <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
+    Attention formula
+  </summary>
+  <div className="mt-2 font-mono text-[11px] leading-relaxed text-[--ink] bg-[--paper] p-3 border border-[--rule] overflow-x-auto">
+    <p className="font-serif text-sm italic mb-2">Single‑head attention (causal):</p>
+    <code className="text-xs">
+      Attention(Q,K,V) = softmax((Q K^T) / sqrt(d_k) + M) V
+    </code>
+    <div className="mt-2 text-xs space-y-1">
+      <p>• Q = x·W_Q, K = x·W_K, V = x·W_V, each W ∈ R^(16×16)</p>
+      <p>• M is the causal mask ( -∞ where j &gt; i)</p>
+      <p>• Shapes: Q,K,V ∈ R^(T×16) → scores ∈ R^(T×T) → output ∈ R^(T×16)</p>
+    </div>
+  </div>
+</details>
     </div>
   );
 }
+
+
+
 
 function LossPanel() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
