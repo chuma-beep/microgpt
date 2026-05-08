@@ -572,6 +572,7 @@ function AttentionPanel({ name }: { name: string }) {
 
 function LossPanel() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [visible, setVisible] = useState(false);
   const [lineDrawn, setLineDrawn] = useState(false);
   const [axisVisible, setAxisVisible] = useState(false);
   const [crosshair, setCrosshair] = useState<{
@@ -593,18 +594,33 @@ function LossPanel() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
     if (prefersReducedMotion) {
+      setVisible(true);
       setLineDrawn(true);
       setAxisVisible(true);
       return;
     }
 
-    const timer1 = setTimeout(() => setLineDrawn(true), 100);
-    const timer2 = setTimeout(() => setAxisVisible(true), 1200);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          const timer1 = setTimeout(() => setLineDrawn(true), 100);
+          const timer2 = setTimeout(() => setAxisVisible(true), 1200);
+          observer.disconnect();
+          return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+          };
+        }
+      },
+      { threshold: 0.15 },
+    );
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
+    if (chartRef.current) {
+      observer.observe(chartRef.current);
+    }
+
+    return () => observer.disconnect();
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -637,9 +653,11 @@ function LossPanel() {
   };
 
   return (
-    <div className="col-span-12">
+    <div
+      className={`col-span-12 loss-panel-wrapper ${visible ? "visible" : ""}`}
+    >
       <div
-        className="h-[360px] w-full loss-chart-container relative"
+        className={`h-[360px] w-full loss-chart-container relative ${visible ? "visible" : ""}`}
         ref={chartRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

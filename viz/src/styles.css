@@ -447,6 +447,33 @@ input:hover,
   animation: line-draw 1.2s linear forwards;
 }
 
+.loss-panel-wrapper {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 600ms ease-in-out,
+    transform 600ms ease-in-out;
+}
+
+.loss-panel-wrapper.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.loss-chart-container {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 600ms ease-in-out,
+    transform 600ms ease-in-out;
+  transition-delay: 100ms;
+}
+
+.loss-chart-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .loss-axis-label {
   opacity: 0;
 }
