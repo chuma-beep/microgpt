@@ -740,7 +740,7 @@ function LossPanel() {
               dataKey="val"
               stroke={INK}
               strokeWidth={2}
-              strokeDasharray="2000"
+              strokeDasharray="8 6 2000"
               dot={false}
               isAnimationActive={false}
               className={lineDrawn ? "loss-line" : ""}
