@@ -740,13 +740,14 @@ function LossPanel() {
               dataKey="val"
               stroke={INK}
               strokeWidth={2}
-              strokeDasharray="8 6 2000"
+              strokeDasharray="8 6"
               dot={false}
               isAnimationActive={false}
-              className={lineDrawn ? "loss-line" : ""}
+              className={lineDrawn ? "loss-line-dashed" : ""}
               style={{
-                transition: "stroke-dashoffset 1.2s linear",
+                transition: "opacity 0.8s ease-in-out",
                 transitionDelay: "200ms",
+                opacity: lineDrawn ? 1 : 0,
               }}
             />
             <ReferenceDot
