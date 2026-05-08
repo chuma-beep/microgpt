@@ -1043,9 +1043,20 @@ const TOOLTIPS: Record<number, string> = {
 function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
-  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
+  // Detect mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Animation logic (unchanged)
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -1080,79 +1091,135 @@ function ArchitecturePanel() {
     });
   }, []);
 
+  const handleBlockClick = (index: number) => {
+    setSelectedBlock(index);
+  };
+
+  const closeBox = () => {
+    setSelectedBlock(null);
+  };
+
   return (
     <div className="col-span-12 arch-diagram-container">
-      <TooltipProvider delay={300}>
-        <div className="flex flex-col items-stretch gap-0 arch-complex">
-          {BLOCKS.map((b, i) => (
-            <Tooltip key={i}>
-              <TooltipTrigger
-                render={
-                  <div
-                    className="flex flex-col items-center arch-block-wrapper"
-                    style={{ position: "relative" }}
-                    data-arch-block={i}
-                  >
-                    <button
-                      type="button"
-                      className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 text-left ${visibleBlocks[i] ? "visible" : ""}`}
-                      style={{ animationDelay: `${i * 80}ms` }}
-                      onClick={() => {
-                        if (selectedBlock === i) {
-                          setSelectedBlock(null);
-                        } else {
-                          setSelectedBlock(i);
-                        }
-                      }}
+      {!isMobile ? (
+        // Desktop: unchanged shadcn Tooltip
+        <TooltipProvider delay={300}>
+          <div className="flex flex-col items-stretch gap-0 arch-complex">
+            {BLOCKS.map((b, i) => (
+              <Tooltip key={i}>
+                <TooltipTrigger
+                  render={
+                    <div
+                      className="flex flex-col items-center arch-block-wrapper"
+                      style={{ position: "relative" }}
+                      data-arch-block={i}
                     >
-                      <span className="block-label font-serif text-[15px] text-[--ink]">
-                        {b.name}
-                      </span>
-                      <span className="font-mono text-[11px] text-[--muted-ink]">
-                        {b.params}
-                      </span>
-                    </button>
-                    {selectedBlock === i && (
-                      <div className="mb-4 rounded border border-[--ink] bg-[#FAFAF7] p-3 md:hidden">
-                        <p className="font-serif text-[13px] leading-[1.5]">
-                          {TOOLTIPS[i]}
-                        </p>
+                      <div
+                        className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <span className="block-label font-serif text-[15px] text-[--ink]">
+                          {b.name}
+                        </span>
+                        <span className="font-mono text-[11px] text-[--muted-ink]">
+                          {b.params}
+                        </span>
                       </div>
-                    )}
-                    {i < BLOCKS.length - 1 && visibleArrows[i] && (
-                      <div className="flex flex-col items-center">
-                        <div
-                          className="arrow-animate h-6 w-px bg-[--ink] visible"
-                          style={{ animationDelay: `${i * 80 + 300}ms` }}
-                        />
-                        <div
-                          className="h-0 w-0 arrow-animate visible"
-                          style={{
-                            borderLeft: "4px solid transparent",
-                            borderRight: "4px solid transparent",
-                            borderTop: `5px solid ${INK}`,
-                            marginTop: -1,
-                            animationDelay: `${i * 80 + 350}ms`,
-                          }}
-                        />
-                      </div>
-                    )}
+                      {i < BLOCKS.length - 1 && visibleArrows[i] && (
+                        <div className="flex flex-col items-center">
+                          <div
+                            className="arrow-animate h-6 w-px bg-[--ink] visible"
+                            style={{ animationDelay: `${i * 80 + 300}ms` }}
+                          />
+                          <div
+                            className="h-0 w-0 arrow-animate visible"
+                            style={{
+                              borderLeft: "4px solid transparent",
+                              borderRight: "4px solid transparent",
+                              borderTop: `5px solid ${INK}`,
+                              marginTop: -1,
+                              animationDelay: `${i * 80 + 350}ms`,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  }
+                />
+                <TooltipContent
+                  side="top"
+                  sideOffset={5}
+                  className="max-w-[280px] rounded-none border border-[--ink] bg-[#FAFAF7] text-foreground"
+                >
+                  <p className="font-serif text-[13px] leading-[1.5]">
+                    {TOOLTIPS[i]}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
+      ) : (
+        // Mobile: clickable blocks, no tooltip, plus info box under diagram
+        <>
+          <div className="flex flex-col items-stretch gap-0 arch-complex">
+            {BLOCKS.map((b, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div
+                  className={`block-animate relative flex w-full max-w-md cursor-pointer items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                  onClick={() => handleBlockClick(i)}
+                >
+                  <span className="block-label font-serif text-[15px] text-[--ink]">
+                    {b.name}
+                  </span>
+                  <span className="font-mono text-[11px] text-[--muted-ink]">
+                    {b.params}
+                  </span>
+                </div>
+                {i < BLOCKS.length - 1 && visibleArrows[i] && (
+                  <div className="flex flex-col items-center">
+                    <div
+                      className="arrow-animate h-6 w-px bg-[--ink] visible"
+                      style={{ animationDelay: `${i * 80 + 300}ms` }}
+                    />
+                    <div
+                      className="h-0 w-0 arrow-animate visible"
+                      style={{
+                        borderLeft: "4px solid transparent",
+                        borderRight: "4px solid transparent",
+                        borderTop: `5px solid ${INK}`,
+                        marginTop: -1,
+                        animationDelay: `${i * 80 + 350}ms`,
+                      }}
+                    />
                   </div>
-                }
-              />
-              <TooltipContent
-                side="top"
-                sideOffset={5}
-                className="max-w-[280px] rounded-none border border-[--ink] bg-[#FAFAF7] text-foreground"
-              >
-                <p className="font-serif text-[13px] leading-[1.5]">
-                  {TOOLTIPS[i]}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
-      </TooltipProvider>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile info box – appears under the diagram when a block is clicked */}
+          {selectedBlock !== null && (
+            <div className="mt-6 border border-[--ink] bg-[--paper] p-4">
+              <div className="flex items-start justify-between">
+                <div className="font-serif text-[13px] leading-[1.5] text-[--ink]">
+                  {TOOLTIPS[selectedBlock]}
+                </div>
+                <button
+                  onClick={closeBox}
+                  className="ml-4 text-[--muted-ink] hover:text-[--ink]"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
         Total ≈ 6.1 k parameters. A single attention head, one transformer
         block, no layer stacking. The smallest configuration that still learns
@@ -1178,6 +1245,7 @@ function ArchitecturePanel() {
     </div>
   );
 }
+
 
 function InteractiveTrainerDesktop(props: {
   wasmReady: boolean;
