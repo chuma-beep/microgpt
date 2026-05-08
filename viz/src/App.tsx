@@ -1087,43 +1087,45 @@ function ArchitecturePanel() {
         <div className="flex flex-col items-stretch gap-0 arch-complex">
           {BLOCKS.map((b, i) => (
             <Tooltip key={i}>
-              <TooltipTrigger>
-                <div
-                  className="flex flex-col items-center arch-block-wrapper"
-                  style={{ position: "relative" }}
-                  data-arch-block={i}
-                >
+              <TooltipTrigger
+                render={
                   <div
-                    className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
-                    style={{ animationDelay: `${i * 80}ms` }}
+                    className="flex flex-col items-center arch-block-wrapper"
+                    style={{ position: "relative" }}
+                    data-arch-block={i}
                   >
-                    <span className="block-label font-serif text-[15px] text-[--ink]">
-                      {b.name}
-                    </span>
-                    <span className="font-mono text-[11px] text-[--muted-ink]">
-                      {b.params}
-                    </span>
-                  </div>
-                  {i < BLOCKS.length - 1 && visibleArrows[i] && (
-                    <div className="flex flex-col items-center">
-                      <div
-                        className="arrow-animate h-6 w-px bg-[--ink] visible"
-                        style={{ animationDelay: `${i * 80 + 300}ms` }}
-                      />
-                      <div
-                        className="h-0 w-0 arrow-animate visible"
-                        style={{
-                          borderLeft: "4px solid transparent",
-                          borderRight: "4px solid transparent",
-                          borderTop: `5px solid ${INK}`,
-                          marginTop: -1,
-                          animationDelay: `${i * 80 + 350}ms`,
-                        }}
-                      />
+                    <div
+                      className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                      style={{ animationDelay: `${i * 80}ms` }}
+                    >
+                      <span className="block-label font-serif text-[15px] text-[--ink]">
+                        {b.name}
+                      </span>
+                      <span className="font-mono text-[11px] text-[--muted-ink]">
+                        {b.params}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </TooltipTrigger>
+                    {i < BLOCKS.length - 1 && visibleArrows[i] && (
+                      <div className="flex flex-col items-center">
+                        <div
+                          className="arrow-animate h-6 w-px bg-[--ink] visible"
+                          style={{ animationDelay: `${i * 80 + 300}ms` }}
+                        />
+                        <div
+                          className="h-0 w-0 arrow-animate visible"
+                          style={{
+                            borderLeft: "4px solid transparent",
+                            borderRight: "4px solid transparent",
+                            borderTop: `5px solid ${INK}`,
+                            marginTop: -1,
+                            animationDelay: `${i * 80 + 350}ms`,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                }
+              />
               <TooltipContent
                 side="right"
                 sideOffset={5}
