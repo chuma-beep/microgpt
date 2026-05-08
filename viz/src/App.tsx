@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Katex } from "@/components/Katex";
 
 const INK = "#1B2A4A";
 const PAPER = "#FAFAF7";
@@ -64,7 +65,9 @@ function attentionMatrix(tokens: number[], headSeed: number = 0) {
         scores.push(-Infinity);
       } else {
         const s =
-          (hashFloat(tokens[i] * 13 + tokens[j] * 7 + i + j + headSeed * 100) - 0.3) * 4 +
+          (hashFloat(tokens[i] * 13 + tokens[j] * 7 + i + j + headSeed * 100) -
+            0.3) *
+            4 +
           (i === j ? 0.5 : 0);
         scores.push(s);
       }
@@ -73,7 +76,6 @@ function attentionMatrix(tokens: number[], headSeed: number = 0) {
   }
   return rows;
 }
-
 
 const LOSS_DATA = [
   { step: 100, train: 3.27, val: 3.04 },
@@ -395,6 +397,99 @@ function HeatRow({
   );
 }
 
+// function EmbeddingPanel({ name }: { name: string }) {
+//   const sequence = useMemo(() => {
+//     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
+//     return ["."].concat(clean.split("")).concat(["."]);
+//   }, [name]);
+//
+//   const [focus, setFocus] = useState(0);
+//   const focusIdx = Math.min(focus, sequence.length - 1);
+//   const tokenIdx = charToIdx(sequence[focusIdx]);
+//   const tok = tokenEmbedding(tokenIdx);
+//   const pos = positionalEmbedding(focusIdx);
+//   const sum = tok.map((v, i) => v + pos[i]);
+//
+//   const [selectedVector, setSelectedVector] = useState<number[] | null>(null);
+//
+//   const handleShowVector = (type: "token" | "position" | "sum") => {
+//     if (type === "token") setSelectedVector(tok);
+//     else if (type === "position") setSelectedVector(pos);
+//     else setSelectedVector(sum);
+//   };
+//
+//   return (
+//     <div className="col-span-12">
+//       <div className="mb-6 flex flex-wrap items-baseline gap-3">
+//         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
+//           inspecting position
+//         </span>
+//         <div className="flex flex-wrap gap-1">
+//           {sequence.map((c, i) => (
+//             <button
+//               key={i}
+//               onClick={() => {
+//                 setFocus(i);
+//                 setSelectedVector(null); // clear vector when switching position
+//               }}
+//               className="btn-ink border px-2 py-1 font-mono text-xs"
+//               style={{
+//                 borderColor: i === focusIdx ? INK : RULE,
+//                 backgroundColor: i === focusIdx ? INK : "transparent",
+//                 color: i === focusIdx ? PAPER : INK,
+//               }}
+//             >
+//               {c === "." ? "·" : c}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+//       <div className="space-y-3">
+//         <div className="cursor-pointer" onClick={() => handleShowVector("token")}>
+//           <HeatRow values={tok} label="token emb." />
+//         </div>
+//         <div className="cursor-pointer" onClick={() => handleShowVector("position")}>
+//           <HeatRow values={pos} label="positional" />
+//         </div>
+//         <div className="my-2 h-px w-full max-w-full bg-[--ink]" />
+//         <div className="cursor-pointer" onClick={() => handleShowVector("sum")}>
+//           <HeatRow values={sum} label="x = e + p" />
+//         </div>
+//       </div>
+//
+//       {selectedVector && (
+//         <div className="mt-4 p-3 border border-[--ink] bg-[--paper] overflow-x-auto">
+//           <div className="font-mono text-[10px] text-[--muted-ink] mb-1">16‑dim vector:</div>
+//           <div className="flex gap-1 flex-wrap">
+//             {selectedVector.map((v, i) => (
+//               <span key={i} className="font-mono text-[11px] tabular-nums">
+//                 {v.toFixed(3)}{i < selectedVector.length-1 ? ", " : ""}
+//               </span>
+//             ))}
+//           </div>
+//         </div>
+//       )}
+//
+//       <p className="mt-6 max-w-2xl font-serif text-sm leading-[1.7] text-[--muted-ink]">
+//         Each character is mapped through a learned 16-dimensional lookup table,
+//         then summed with a sinusoidal positional vector. The result is the
+//         residual stream entering layer 0.
+//       </p>
+//
+//       {/* Equation block */}
+//       <details className="mt-4 cursor-pointer">
+//         <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
+//           Embedding equations
+//         </summary>
+//         <div className="mt-2 font-mono text-[11px] leading-relaxed text-[--ink] bg-[--paper] p-3 border border-[--rule]">
+//           <code>x_i = E[t_i] + P[i]</code>
+//           <div className="mt-1 text-xs">E ∈ ℝ^{V×16}, P ∈ ℝ^{T×16}, x_i ∈ ℝ^{16}</div>
+//         </div>
+//       </details>
+//     </div>
+//   );
+// }
+
 function EmbeddingPanel({ name }: { name: string }) {
   const sequence = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
@@ -408,6 +503,14 @@ function EmbeddingPanel({ name }: { name: string }) {
   const pos = positionalEmbedding(focusIdx);
   const sum = tok.map((v, i) => v + pos[i]);
 
+  const [selectedVector, setSelectedVector] = useState<number[] | null>(null);
+
+  const handleShowVector = (type: "token" | "position" | "sum") => {
+    if (type === "token") setSelectedVector(tok);
+    else if (type === "position") setSelectedVector(pos);
+    else setSelectedVector(sum);
+  };
+
   return (
     <div className="col-span-12">
       <div className="mb-6 flex flex-wrap items-baseline gap-3">
@@ -418,7 +521,10 @@ function EmbeddingPanel({ name }: { name: string }) {
           {sequence.map((c, i) => (
             <button
               key={i}
-              onClick={() => setFocus(i)}
+              onClick={() => {
+                setFocus(i);
+                setSelectedVector(null);
+              }}
               className="btn-ink border px-2 py-1 font-mono text-xs"
               style={{
                 borderColor: i === focusIdx ? INK : RULE,
@@ -432,20 +538,64 @@ function EmbeddingPanel({ name }: { name: string }) {
         </div>
       </div>
       <div className="space-y-3">
-        <HeatRow values={tok} label="token emb." />
-        <HeatRow values={pos} label="positional" />
+        <div
+          className="cursor-pointer"
+          onClick={() => handleShowVector("token")}
+        >
+          <HeatRow values={tok} label="token emb." />
+        </div>
+        <div
+          className="cursor-pointer"
+          onClick={() => handleShowVector("position")}
+        >
+          <HeatRow values={pos} label="positional" />
+        </div>
         <div className="my-2 h-px w-full max-w-full bg-[--ink]" />
-        <HeatRow values={sum} label="x = e + p" />
+        <div className="cursor-pointer" onClick={() => handleShowVector("sum")}>
+          <HeatRow values={sum} label="x = e + p" />
+        </div>
       </div>
+
+      {selectedVector && (
+        <div className="mt-4 p-3 border border-[--ink] bg-[--paper] overflow-x-auto">
+          <div className="font-mono text-[10px] text-[--muted-ink] mb-1">
+            16‑dim vector:
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            {selectedVector.map((v, i) => (
+              <span key={i} className="font-mono text-[11px] tabular-nums">
+                {v.toFixed(3)}
+                {i < selectedVector.length - 1 ? ", " : ""}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="mt-6 max-w-2xl font-serif text-sm leading-[1.7] text-[--muted-ink]">
         Each character is mapped through a learned 16-dimensional lookup table,
         then summed with a sinusoidal positional vector. The result is the
         residual stream entering layer 0.
       </p>
+
+      {/* KaTeX equation block */}
+      <details className="mt-4 cursor-pointer">
+        <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
+          Embedding equations
+        </summary>
+        <div className="mt-2 font-mono text-[11px] leading-relaxed text-[--ink] bg-[--paper] p-3 border border-[--rule]">
+          <Katex math="x_i = E[t_i] + P[i]" />
+          <div className="mt-1 text-xs">
+            <Katex
+              math="E \in \mathbb{R}^{V \times 16},\; P \in \mathbb{R}^{T \times 16},\; x_i \in \mathbb{R}^{16}"
+              inline
+            />
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
-
 
 function AttentionPanel({ name }: { name: string }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -474,15 +624,26 @@ function AttentionPanel({ name }: { name: string }) {
     return heads;
   }, [tokens]);
 
-  const [hover, setHover] = useState<{ i: number; j: number; head: number; value: number } | null>(null);
-  const [touched, setTouched] = useState<{ i: number; j: number; head: number } | null>(null);
+  const [hover, setHover] = useState<{
+    i: number;
+    j: number;
+    head: number;
+    value: number;
+  } | null>(null);
+  const [touched, setTouched] = useState<{
+    i: number;
+    j: number;
+    head: number;
+  } | null>(null);
   const cell = isMobile ? 18 : 24;
 
   const [cellsVisible, setCellsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) {
       setCellsVisible(true);
       return;
@@ -504,11 +665,17 @@ function AttentionPanel({ name }: { name: string }) {
     const n = matrix.length;
     return (
       <div className="flex flex-col items-center">
-        <div className="font-mono text-[10px] text-[--muted-ink] mb-1">Head {headIdx + 1}</div>
+        <div className="font-mono text-[10px] text-[--muted-ink] mb-1">
+          Head {headIdx + 1}
+        </div>
         <div className="relative inline-block">
           <div className="ml-7 flex">
             {labels.map((c, j) => (
-              <div key={j} className="flex items-end justify-center font-mono text-[9px] text-[--muted-ink]" style={{ width: cell, height: 16 }}>
+              <div
+                key={j}
+                className="flex items-end justify-center font-mono text-[9px] text-[--muted-ink]"
+                style={{ width: cell, height: 16 }}
+              >
                 {c}
               </div>
             ))}
@@ -516,7 +683,11 @@ function AttentionPanel({ name }: { name: string }) {
           <div className="flex">
             <div className="flex flex-col">
               {labels.map((c, i) => (
-                <div key={i} className="flex items-center justify-end pr-1 font-mono text-[9px] text-[--muted-ink]" style={{ width: 20, height: cell }}>
+                <div
+                  key={i}
+                  className="flex items-center justify-end pr-1 font-mono text-[9px] text-[--muted-ink]"
+                  style={{ width: 20, height: cell }}
+                >
                   {c}
                 </div>
               ))}
@@ -527,12 +698,20 @@ function AttentionPanel({ name }: { name: string }) {
                   {row.map((w, j) => {
                     const op = isFinite(w) ? w : 0;
                     const isHovered =
-                      (hover && hover.i === i && hover.j === j && hover.head === headIdx) ||
-                      (touched && touched.i === i && touched.j === j && touched.head === headIdx);
+                      (hover &&
+                        hover.i === i &&
+                        hover.j === j &&
+                        hover.head === headIdx) ||
+                      (touched &&
+                        touched.i === i &&
+                        touched.j === j &&
+                        touched.head === headIdx);
                     return (
                       <div
                         key={j}
-                        onMouseEnter={() => setHover({ i, j, head: headIdx, value: w })}
+                        onMouseEnter={() =>
+                          setHover({ i, j, head: headIdx, value: w })
+                        }
                         onMouseLeave={() => setHover(null)}
                         onTouchStart={() => setTouched({ i, j, head: headIdx })}
                         onTouchEnd={() => setTouched(null)}
@@ -544,7 +723,9 @@ function AttentionPanel({ name }: { name: string }) {
                         }}
                       >
                         {isHovered && (
-                          <div className="attn-tooltip visible">{matrix[i][j].toFixed(3)}</div>
+                          <div className="attn-tooltip visible">
+                            {matrix[i][j].toFixed(3)}
+                          </div>
                         )}
                       </div>
                     );
@@ -560,33 +741,47 @@ function AttentionPanel({ name }: { name: string }) {
 
   return (
     <div className="col-span-12 lg:col-span-8" ref={containerRef}>
-      <div className={`grid ${isMobile ? "grid-cols-1 gap-8" : "grid-cols-2 gap-6"}`}>
+      <div
+        className={`grid ${isMobile ? "grid-cols-1 gap-8" : "grid-cols-2 gap-6"}`}
+      >
         {headsMatrices.map((matrix, idx) => renderHead(matrix, idx))}
       </div>
       {/* Equation block */}
-{/* Equation block – fixed for JSX */}
-<details className="mt-6 cursor-pointer">
-  <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
-    Attention formula
-  </summary>
-  <div className="mt-2 font-mono text-[11px] leading-relaxed text-[--ink] bg-[--paper] p-3 border border-[--rule] overflow-x-auto">
-    <p className="font-serif text-sm italic mb-2">Single‑head attention (causal):</p>
-    <code className="text-xs">
-      Attention(Q,K,V) = softmax((Q K^T) / sqrt(d_k) + M) V
-    </code>
-    <div className="mt-2 text-xs space-y-1">
-      <p>• Q = x·W_Q, K = x·W_K, V = x·W_V, each W ∈ R^(16×16)</p>
-      <p>• M is the causal mask ( -∞ where j &gt; i)</p>
-      <p>• Shapes: Q,K,V ∈ R^(T×16) → scores ∈ R^(T×T) → output ∈ R^(T×16)</p>
-    </div>
-  </div>
-</details>
+      {/* KaTeX equation block */}
+      <details className="mt-6 cursor-pointer">
+        <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
+          Attention formula
+        </summary>
+        <div className="mt-2 font-mono text-[11px] leading-relaxed text-[--ink] bg-[--paper] p-3 border border-[--rule] overflow-x-auto">
+          <p className="font-serif text-sm italic mb-2">
+            Single‑head attention (causal):
+          </p>
+          <div className="text-base">
+            <Katex math="\text{Attention}(Q,K,V) = \operatorname{softmax}\left(\frac{QK^T}{\sqrt{d_k}} + M\right) V" />
+          </div>
+          <div className="mt-2 text-xs space-y-1">
+            <p>
+              • <Katex math="Q = x W_Q,\; K = x W_K,\; V = x W_V" inline />,
+              each <Katex math="W \in \mathbb{R}^{16 \times 16}" inline />
+            </p>
+            <p>
+              • <Katex math="M" inline /> is the causal mask ({" "}
+              <Katex math="-\infty" inline /> where{" "}
+              <Katex math="j > i" inline /> )
+            </p>
+            <p>
+              • Shapes:{" "}
+              <Katex
+                math="Q,K,V \in \mathbb{R}^{T \times 16} \to \text{scores} \in \mathbb{R}^{T \times T} \to \text{output} \in \mathbb{R}^{T \times 16}"
+                inline
+              />
+            </p>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
-
-
-
 
 function LossPanel() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
@@ -1584,7 +1779,9 @@ function InteractiveTrainerSection() {
           </div>
         </div>
         <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
-          Train the model in your browser. The Go/WASM implementation runs entirely client-side — every forward pass, backward pass, and parameter update happens in real time.
+          Train the model in your browser. The Go/WASM implementation runs
+          entirely client-side — every forward pass, backward pass, and
+          parameter update happens in real time.
         </p>
       </header>
 
@@ -1593,14 +1790,30 @@ function InteractiveTrainerSection() {
         <div className="mb-8 grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-7 md:col-start-5">
             <div className="border-l-2 border-[--ink] pl-4 font-serif text-sm leading-relaxed text-[--muted-ink]">
-              <p className="mb-2"><strong>How it works in your browser:</strong></p>
+              <p className="mb-2">
+                <strong>How it works in your browser:</strong>
+              </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>The model is compiled from Go to WebAssembly (WASM) and runs inside your browser’s JavaScript engine.</li>
-                <li>All training loops, matrix operations, and parameter updates happen client‑side – no data leaves your machine.</li>
-                <li>You can reset, stop, resume, and generate names at any step.</li>
-                <li>The loss curve and generated samples update in real time as training progresses.</li>
+                <li>
+                  The model is compiled from Go to WebAssembly (WASM) and runs
+                  inside your browser’s JavaScript engine.
+                </li>
+                <li>
+                  All training loops, matrix operations, and parameter updates
+                  happen client‑side – no data leaves your machine.
+                </li>
+                <li>
+                  You can reset, stop, resume, and generate names at any step.
+                </li>
+                <li>
+                  The loss curve and generated samples update in real time as
+                  training progresses.
+                </li>
               </ul>
-              <p className="mt-2 text-xs italic">Try the “generate” button after ~1000 steps to see plausible names.</p>
+              <p className="mt-2 text-xs italic">
+                Try the “generate” button after ~1000 steps to see plausible
+                names.
+              </p>
             </div>
           </div>
         </div>
@@ -1659,7 +1872,6 @@ function InteractiveTrainerSection() {
     </section>
   );
 }
-
 
 function AnimatedTitle({ children }: { children: React.ReactNode }) {
   const text = typeof children === "string" ? children : "";
