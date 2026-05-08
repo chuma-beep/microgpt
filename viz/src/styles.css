@@ -606,8 +606,10 @@ input:hover,
    ======================================== */
 
 .block-animate {
+  overflow: visible;
   opacity: 0;
   clip-path: inset(0 100% 0 0);
+  overflow: visible;
 }
 
 .block-animate.visible {
@@ -620,6 +622,51 @@ input:hover,
 
 .block-animate:hover .block-label {
   font-weight: 600;
+}
+
+.arch-tooltip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translateX(-6px);
+  max-width: 280px;
+  padding: 8px 12px;
+  background-color: var(--paper);
+  border: 1px solid var(--ink);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 150ms ease-in-out,
+    transform 150ms ease-in-out;
+}
+
+.arch-tooltip.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateX(0) !important;
+}
+
+@media (max-width: 639px) {
+  .arch-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    max-width: 280px;
+    width: max-content;
+  }
+
+  .arch-tooltip.visible {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.arch-complex {
+  overflow: visible;
 }
 
 .arrow-animate {
@@ -872,7 +919,12 @@ input:hover,
   .arch-diagram-container {
     transform: scale(0.85);
     transform-origin: top center;
+    overflow: visible;
   }
+}
+
+.arch-diagram-container {
+  overflow: visible;
 }
 
 .simplified-version {

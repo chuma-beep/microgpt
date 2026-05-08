@@ -1010,20 +1010,45 @@ function GenerationPanel() {
 
 const BLOCKS = [
   { name: "Input Tokens", params: "—" },
-  { name: "Embedding", params: "27 × 16  =  432 p" },
-  { name: "RMSNorm", params: "16 p" },
-  { name: "Attention (1H)", params: "≈ 3.1 k p" },
+  { name: "Embedding (27 × 16 = 432 p)", params: "27 × 16  =  432 p" },
+  { name: "RMSNorm (16 p)", params: "16 p" },
+  { name: "Attention (1H) (≈ 3.1k p)", params: "≈ 3.1 k p" },
   { name: "Residual ⊕", params: "—" },
-  { name: "MLP (16→64→16)", params: "≈ 2.1 k p" },
+  { name: "MLP (16→64→16) (≈ 2.1k p)", params: "≈ 2.1 k p" },
   { name: "Residual ⊕", params: "—" },
-  { name: "LM Head", params: "16 × 27  =  432 p" },
+  { name: "LM Head (16 × 27 = 432 p)", params: "16 × 27  =  432 p" },
   { name: "Softmax", params: "—" },
-  { name: "Output Distribution", params: "27 dims" },
+  { name: "Output Distribution (27 dims)", params: "27 dims" },
 ];
+
+const TOOLTIPS: Record<number, string> = {
+  0: "Each character of the name is converted to a number. 'a' becomes 1, 'b' becomes 2, and so on. The boundary marker · becomes 0.",
+  1: "Each token number is looked up in a table of learned vectors. Think of it as converting a simple number into a rich 16-dimensional description the model can reason about. This table has 432 learnable values.",
+  2: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm is a simpler, faster alternative to the more common LayerNorm.",
+  3: "The attention mechanism lets each character look at the characters before it and decide which ones matter most for predicting the next character. 'Q' asks a question, 'K' holds answers, 'V' holds the actual information.",
+  4: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network — a key insight from ResNet.",
+  5: "A small feedforward network that processes each position independently. It expands the 16-dimensional vector to 64, applies a non-linearity (ReLU), then compresses back to 16. This is where most pattern memorisation happens.",
+  6: "Another shortcut connection, this time around the MLP block. Same idea — preserves information and makes gradients flow more easily during training.",
+  7: "The final projection that converts the 16-dimensional vector back into 27 scores — one for each possible next character. Higher score means the model thinks that character is more likely to come next.",
+  8: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character — temperature controls how random this sampling is.",
+  9: "The final result — a probability for each of the 27 tokens. The model samples one token from this distribution, appends it to the name, and repeats the whole process until it generates the boundary marker ·.",
+};
 
 function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
+  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
+  const [tappedBlock, setTappedBlock] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -1059,14 +1084,34 @@ function ArchitecturePanel() {
     });
   }, []);
 
+  const handleBlockTap = (index: number) => {
+    if (isMobile) {
+      setTappedBlock(tappedBlock === index ? null : index);
+    }
+  };
+
+  const showTooltip = (index: number) => {
+    if (isMobile) {
+      return tappedBlock === index;
+    }
+    return hoveredBlock === index;
+  };
+
   return (
     <div className="col-span-12 arch-diagram-container">
       <div className="flex flex-col items-stretch gap-0 arch-complex">
         {BLOCKS.map((b, i) => (
-          <div key={i} className="flex flex-col items-center">
+          <div
+            key={i}
+            className="flex flex-col items-center arch-block-wrapper"
+            style={{ position: "relative" }}
+          >
             <div
-              className={`block-animate flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+              className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
               style={{ animationDelay: `${i * 80}ms` }}
+              onMouseEnter={() => !isMobile && setHoveredBlock(i)}
+              onMouseLeave={() => !isMobile && setHoveredBlock(null)}
+              onClick={() => handleBlockTap(i)}
             >
               <span className="block-label font-serif text-[15px] text-[--ink]">
                 {b.name}
@@ -1075,6 +1120,13 @@ function ArchitecturePanel() {
                 {b.params}
               </span>
             </div>
+            {TOOLTIPS[i] && (
+              <div
+                className={`arch-tooltip${showTooltip(i) ? " visible" : ""}`}
+              >
+                {TOOLTIPS[i]}
+              </div>
+            )}
             {i < BLOCKS.length - 1 && visibleArrows[i] && (
               <div className="flex flex-col items-center">
                 <div
