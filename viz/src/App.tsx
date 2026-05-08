@@ -12,6 +12,8 @@ import {
 const INK = "#1B2A4A";
 const PAPER = "#FAFAF7";
 const RULE = "#D9D6CC";
+const INK_GREEN = "#2D4A3E";
+const INK_RED = "#4A2D2D";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 const charToIdx = (c: string) => {
@@ -91,6 +93,54 @@ const GENERATIONS: { name: string; probs: number[] }[] = [
   { name: "ancdy", probs: [0.41, 0.55, 0.28, 0.34, 0.39] },
 ];
 
+function FlipNumber({
+  value,
+  decimals = 4,
+}: {
+  value: number;
+  decimals?: number;
+}) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const prevValue = useRef(value);
+
+  useEffect(() => {
+    if (prevValue.current !== value) {
+      setIsFlipping(true);
+      const timer = setTimeout(() => {
+        setDisplayValue(value);
+        setIsFlipping(false);
+        prevValue.current = value;
+      }, 75);
+      return () => clearTimeout(timer);
+    }
+  }, [value]);
+
+  const getLossColorClass = () => {
+    if (value < 2.5) return "loss-low";
+    if (value > 3.0) return "loss-high";
+    return "";
+  };
+
+  const formattedValue = value.toFixed(decimals);
+
+  if (isFlipping) {
+    return (
+      <span className="flip-counter">
+        <span className="flip-counter-old">
+          {prevValue.current.toFixed(decimals)}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={`flip-counter ${getLossColorClass()}`}>
+      <span className="flip-counter-new">{formattedValue}</span>
+    </span>
+  );
+}
+
 function Section({
   number,
   title,
@@ -104,6 +154,7 @@ function Section({
 }) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
+  const [animationStarted, setAnimationStarted] = useState(false);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -116,12 +167,13 @@ function Section({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
           setVisible(true);
+          setAnimationStarted(true);
           observer.disconnect();
         }
       },
-      { threshold: 0.2 },
+      { threshold: [0.15] },
     );
 
     if (ref.current) {
@@ -138,20 +190,26 @@ function Section({
     >
       <header className="mb-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
+          <div
+            className={`figure-number font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink] ${animationStarted ? "animate" : ""}`}
+          >
             Figure {number}
           </div>
-          <h2 className="mt-3 font-serif text-2xl font-medium leading-tight text-[--ink]">
+          <h2
+            className={`figure-title mt-3 font-serif text-2xl font-medium leading-tight text-[--ink] ${animationStarted ? "animate" : ""}`}
+          >
             {title}
           </h2>
         </div>
         {caption && (
-          <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
+          <p
+            className={`figure-content col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5 ${animationStarted ? "animate" : ""}`}
+          >
             {caption}
           </p>
         )}
       </header>
-      <div className="grid grid-cols-12 gap-6">{children}</div>
+      <div className="figure-content grid grid-cols-12 gap-6">{children}</div>
     </section>
   );
 }
@@ -169,6 +227,24 @@ function TokenizerPanel({
   }, [name]);
 
   const [animateKey, setAnimateKey] = useState(0);
+  const [rowPulsed, setRowPulsed] = useState<Set<number>>(new Set());
+
+  const handleNameChange = (newName: string) => {
+    setName(newName);
+    setAnimateKey((k) => k + 1);
+    setRowPulsed(new Set());
+  };
+
+  useEffect(() => {
+    const timers: NodeJS.Timeout[] = [];
+    sequence.forEach((_, i) => {
+      const timer = setTimeout(() => {
+        setRowPulsed((prev) => new Set(prev).add(i));
+      }, i * 60);
+      timers.push(timer);
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [animateKey, sequence.length]);
 
   return (
     <div className="col-span-12 lg:col-span-12">
@@ -177,12 +253,9 @@ function TokenizerPanel({
       </label>
       <input
         value={name}
-        onChange={(e) => {
-          setName(e.target.value);
-          setAnimateKey((k) => k + 1);
-        }}
+        onChange={(e) => handleNameChange(e.target.value)}
         spellCheck={false}
-        className="w-full max-w-md border border-[--rule] bg-transparent px-3 py-2 font-mono text-base text-[--ink] outline-none focus:border-[--ink]"
+        className="btn-ink w-full max-w-md border border-[--rule] bg-transparent px-3 py-2 font-mono text-base text-[--ink] outline-none focus:border-[--ink]"
       />
       <div className="mt-8 overflow-x-auto">
         <table className="min-w-0 border-collapse font-mono text-sm token-table">
@@ -209,7 +282,7 @@ function TokenizerPanel({
                 <tr
                   key={`${animateKey}-${i}`}
                   className="token-row-animate border-b border-[--rule]"
-                  style={{ animationDelay: `${i * 50}ms` }}
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <td className="px-3 py-2 text-[--muted-ink]">{i}</td>
                   <td className="px-3 py-2">
@@ -225,7 +298,7 @@ function TokenizerPanel({
                       {Array.from({ length: 27 }).map((_, k) => (
                         <div
                           key={k}
-                          className="h-3 w-[10px] border border-[--rule] heatmap-cell"
+                          className={`h-3 w-[10px] border border-[--rule] heatmap-cell ${k === idx && rowPulsed.has(i) ? "one-hot-cell-pulse" : ""}`}
                           style={{
                             backgroundColor: k === idx ? INK : "transparent",
                           }}
@@ -255,23 +328,56 @@ function HeatRow({
   const max = symmetric
     ? Math.max(...values.map((v) => Math.abs(v))) || 1
     : Math.max(...values) || 1;
+
+  const [cellsAnimated, setCellsAnimated] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setCellsAnimated(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setCellsAnimated(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="flex items-center gap-3 embedding-row">
+    <div className="flex items-center gap-3 embedding-row" ref={ref}>
       <div className="w-28 shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-[--muted-ink]">
         {label}
       </div>
       <div className="flex">
         {values.map((v, i) => {
           const op = symmetric ? Math.abs(v) / max : v / max;
+          const rowIdx = values.findIndex((_, idx) => idx === i);
+          const cellAnimationDelay = cellsAnimated ? rowIdx * 15 : 0;
+
           return (
             <div
               key={i}
-              className="flex h-7 w-7 items-center justify-center border border-[--rule] font-mono text-[9px]"
+              className={`flex h-7 w-7 items-center justify-center border border-[--rule] font-mono text-[9px] heatmap-cell-animate ${cellsAnimated ? "animate" : ""}`}
               style={{
                 backgroundColor: `rgba(27, 42, 74, ${Math.min(0.9, op * 0.9).toFixed(3)})`,
                 color: op > 0.55 ? PAPER : INK,
+                animationDelay: `${cellAnimationDelay}ms`,
               }}
-              title={v.toFixed(2)}
             >
               {v >= 0 ? "" : "−"}
             </div>
@@ -306,7 +412,7 @@ function EmbeddingPanel({ name }: { name: string }) {
             <button
               key={i}
               onClick={() => setFocus(i)}
-              className="border px-2 py-1 font-mono text-xs"
+              className="btn-ink border px-2 py-1 font-mono text-xs"
               style={{
                 borderColor: i === focusIdx ? INK : RULE,
                 backgroundColor: i === focusIdx ? INK : "transparent",
@@ -360,9 +466,41 @@ function AttentionPanel({ name }: { name: string }) {
   const [touched, setTouched] = useState<{ i: number; j: number } | null>(null);
   const cell = isMobile ? 20 : 28;
 
+  const [cellsVisible, setCellsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setCellsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setCellsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="col-span-12 lg:col-span-8">
-      <div className="relative inline-block attention-container">
+      <div
+        className="relative inline-block attention-container"
+        ref={containerRef}
+      >
         <div className="ml-7 flex">
           {labels.map((c, j) => (
             <div
@@ -392,6 +530,10 @@ function AttentionPanel({ name }: { name: string }) {
                 {row.map((w, j) => {
                   const op = isFinite(w) ? w : 0;
                   const order = i * row.length + j;
+                  const isHovered =
+                    (hover && hover.i === i && hover.j === j) ||
+                    (touched && touched.i === i && touched.j === j);
+
                   return (
                     <div
                       key={j}
@@ -399,20 +541,23 @@ function AttentionPanel({ name }: { name: string }) {
                       onMouseLeave={() => setHover(null)}
                       onTouchStart={() => setTouched({ i, j })}
                       onTouchEnd={() => setTouched(null)}
-                      className="attn-cell relative border border-[--rule]"
+                      className={`attn-cell relative border border-[--rule] ${cellsVisible ? "animate" : ""}`}
                       style={{
                         width: cell,
                         height: cell,
                         backgroundColor: `rgba(27,42,74,${(op * 0.95).toFixed(3)})`,
-                        animationDelay: `${order * 20}ms`,
+                        animationDelay: cellsVisible
+                          ? `${order * 20}ms`
+                          : "0ms",
                       }}
                     >
-                      {(hover && hover.i === i && hover.j === j) ||
-                      (touched && touched.i === i && touched.j === j) ? (
-                        <div className="attn-tooltip">
+                      {isHovered && (
+                        <div
+                          className={`attn-tooltip ${isHovered ? "visible" : ""}`}
+                        >
                           {matrix[i][j].toFixed(3)}
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   );
                 })}
@@ -427,6 +572,15 @@ function AttentionPanel({ name }: { name: string }) {
 
 function LossPanel() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [lineDrawn, setLineDrawn] = useState(false);
+  const [axisVisible, setAxisVisible] = useState(false);
+  const [crosshair, setCrosshair] = useState<{
+    x: number;
+    y: number;
+    step: number;
+    loss: number;
+  } | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -434,9 +588,62 @@ function LossPanel() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setLineDrawn(true);
+      setAxisVisible(true);
+      return;
+    }
+
+    const timer1 = setTimeout(() => setLineDrawn(true), 100);
+    const timer2 = setTimeout(() => setAxisVisible(true), 1200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!chartRef.current || !lineDrawn) return;
+
+    const rect = chartRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const chartWidth = rect.width - 100;
+    const relX = Math.max(0, Math.min(1, (x - 50) / chartWidth));
+    const step = Math.round(relX * 10000);
+
+    const dataPoint = LOSS_DATA.find((d, i) => {
+      const next = LOSS_DATA[i + 1];
+      if (!next) return d.step >= step;
+      return d.step <= step && step < next.step;
+    });
+
+    if (dataPoint) {
+      setCrosshair({
+        x: 50 + (dataPoint.step / 10000) * chartWidth,
+        y: 320 - ((dataPoint.train - 2.0) / 1.5) * 280,
+        step: dataPoint.step,
+        loss: dataPoint.train,
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setCrosshair(null);
+  };
+
   return (
     <div className="col-span-12">
-      <div className="h-[360px] w-full loss-chart-container">
+      <div
+        className="h-[360px] w-full loss-chart-container relative"
+        ref={chartRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={LOSS_DATA}
@@ -506,6 +713,7 @@ function LossPanel() {
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
+              className={lineDrawn ? "loss-line" : ""}
             />
             <Line
               type="monotone"
@@ -515,6 +723,8 @@ function LossPanel() {
               strokeDasharray="4 3"
               dot={false}
               isAnimationActive={false}
+              className={lineDrawn ? "loss-line" : ""}
+              style={{ animationDelay: "200ms" }}
             />
             <ReferenceDot
               x={10000}
@@ -546,6 +756,42 @@ function LossPanel() {
             />
           </LineChart>
         </ResponsiveContainer>
+
+        {crosshair && (
+          <div
+            className="loss-crosshair visible"
+            style={{
+              position: "absolute",
+              left: crosshair.x,
+              top: 20,
+              bottom: 30,
+              width: 1,
+              backgroundColor: INK,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
+        {crosshair && (
+          <div
+            className="loss-tooltip visible"
+            style={{
+              position: "absolute",
+              left: crosshair.x,
+              top: 0,
+              transform: "translateX(-50%)",
+              backgroundColor: PAPER,
+              border: `1px solid ${INK}`,
+              padding: "4px 8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}
+          >
+            step {crosshair.step} · loss {crosshair.loss.toFixed(3)}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -563,15 +809,24 @@ function GeneratedRow({
   isLatest: boolean;
 }) {
   const [count, setCount] = useState(isLatest ? 0 : name.length);
+  const [showStep, setShowStep] = useState(false);
+
   useEffect(() => {
-    if (!isLatest) return;
+    if (!isLatest) {
+      setCount(name.length);
+      return;
+    }
     setCount(0);
+    setShowStep(false);
     let i = 0;
     const id = window.setInterval(() => {
       i += 1;
       setCount(i);
-      if (i >= name.length) window.clearInterval(id);
-    }, 80);
+      if (i >= name.length) {
+        window.clearInterval(id);
+        setTimeout(() => setShowStep(true), 200);
+      }
+    }, 55);
     return () => window.clearInterval(id);
   }, [isLatest, name]);
 
@@ -581,9 +836,22 @@ function GeneratedRow({
         {String(index + 1).padStart(2, "0")}
       </td>
       <td className="px-2 py-3">
-        <span>{name.slice(0, count)}</span>
+        <span>
+          {name
+            .slice(0, count)
+            .split("")
+            .map((char, i) => (
+              <span
+                key={i}
+                className="typewriter-char"
+                style={{ animationDelay: `${i * 55}ms` }}
+              >
+                {char}
+              </span>
+            ))}
+        </span>
         {isLatest && count < name.length && (
-          <span className="ml-[1px] inline-block h-[1em] w-[6px] -mb-[2px] bg-[--ink] align-middle typewriter-caret" />
+          <span className="typewriter-caret ml-[1px] inline-block h-[1em] w-[6px] -mb-[2px] bg-[--ink] align-middle" />
         )}
       </td>
       <td className="px-2 py-3">
@@ -657,18 +925,20 @@ function GenerationPanel() {
         <button
           onClick={handleGenerate}
           disabled={!wasmReady}
-          className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
+          className="btn-ink btn-ink-primary border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
         >
-          {wasmReady ? "▸ sample next" : "loading model..."}
+          <span className="btn-content">
+            {wasmReady ? "▸ sample next" : "loading model..."}
+          </span>
         </button>
         <button
           onClick={() => {
             setShown(0);
             setGenerations([]);
           }}
-          className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
+          className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
         >
-          reset
+          <span className="btn-content">reset</span>
         </button>
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
           {shown} / {generations.length} drawn
@@ -729,13 +999,15 @@ const BLOCKS = [
 
 function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
+  const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     if (prefersReducedMotion) {
-      setVisibleBlocks(BLOCKS.map(() => true));
+      setVisibleBlocks(BLOCKS.map((_, i) => true));
+      setVisibleArrows(BLOCKS.map((_, i) => true));
       return;
     }
     BLOCKS.forEach((_, i) => {
@@ -745,7 +1017,21 @@ function ArchitecturePanel() {
           next[i] = true;
           return next;
         });
-      }, i * 100);
+      }, i * 80);
+    });
+    BLOCKS.forEach((_, i) => {
+      if (i < BLOCKS.length - 1) {
+        setTimeout(
+          () => {
+            setVisibleArrows((prev) => {
+              const next = [...prev];
+              next[i] = true;
+              return next;
+            });
+          },
+          i * 80 + 300,
+        );
+      }
     });
   }, []);
 
@@ -756,20 +1042,20 @@ function ArchitecturePanel() {
           <div key={i} className="flex flex-col items-center">
             <div
               className={`block-animate flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
-              style={{ animationDelay: `${i * 100}ms` }}
+              style={{ animationDelay: `${i * 80}ms` }}
             >
-              <span className="font-serif text-[15px] text-[--ink]">
+              <span className="block-label font-serif text-[15px] text-[--ink]">
                 {b.name}
               </span>
               <span className="font-mono text-[11px] text-[--muted-ink]">
                 {b.params}
               </span>
             </div>
-            {i < BLOCKS.length - 1 && visibleBlocks[i] && (
+            {i < BLOCKS.length - 1 && visibleArrows[i] && (
               <div className="flex flex-col items-center">
                 <div
                   className="arrow-animate h-6 w-px bg-[--ink] visible"
-                  style={{ animationDelay: `${i * 100 + 150}ms` }}
+                  style={{ animationDelay: `${i * 80 + 300}ms` }}
                 />
                 <div
                   className="h-0 w-0 arrow-animate visible"
@@ -778,7 +1064,7 @@ function ArchitecturePanel() {
                     borderRight: "4px solid transparent",
                     borderTop: `5px solid ${INK}`,
                     marginTop: -1,
-                    animationDelay: `${i * 100 + 180}ms`,
+                    animationDelay: `${i * 80 + 350}ms`,
                   }}
                 />
               </div>
@@ -842,12 +1128,6 @@ function InteractiveTrainerDesktop(props: {
     generated,
     showGenerate,
     setTraining,
-    setStep,
-    setLoss,
-    setLossHistory,
-    setGenerated,
-    setShowGenerate,
-    setInitStatus,
     handleReset,
     startTraining,
     handleGenerate,
@@ -860,42 +1140,42 @@ function InteractiveTrainerDesktop(props: {
           <button
             onClick={handleReset}
             disabled={!wasmReady}
-            className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+            className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
           >
-            reset
+            <span className="btn-content">reset</span>
           </button>
           {!training && step === 0 && (
             <button
               onClick={startTraining}
               disabled={!wasmReady || initStatus !== "ready"}
-              className="btn-hover border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:text-[--muted-ink]"
+              className="btn-ink btn-ink-primary border border-[--ink] bg-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:text-[--muted-ink]"
             >
-              start training
+              <span className="btn-content">start training</span>
             </button>
           )}
           {training && (
             <button
               onClick={() => setTraining(false)}
-              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
+              className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
             >
-              stop
+              <span className="btn-content">stop</span>
             </button>
           )}
           {!training && step > 0 && step < 10000 && (
             <button
               onClick={() => setTraining(true)}
               disabled={!wasmReady}
-              className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
+              className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink]"
             >
-              resume
+              <span className="btn-content">resume</span>
             </button>
           )}
           <button
             onClick={handleGenerate}
             disabled={!wasmReady || !showGenerate}
-            className="btn-hover border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink] training-generate-btn"
+            className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink] disabled:text-[--muted-ink] training-generate-btn"
           >
-            generate
+            <span className="btn-content">generate</span>
           </button>
         </div>
 
@@ -903,7 +1183,8 @@ function InteractiveTrainerDesktop(props: {
           {initStatus}
           {initStatus === "ready" && step > 0 && (
             <span className="ml-4">
-              step {step} / 10000 · loss {loss?.toFixed(4) ?? "—"}
+              step <FlipNumber value={step} decimals={0} /> / 10000 · loss{" "}
+              {loss !== null ? <FlipNumber value={loss} /> : "—"}
             </span>
           )}
         </div>
@@ -1138,9 +1419,9 @@ function InteractiveTrainerSection() {
             <button
               onClick={handleMobileGenerate}
               disabled={!wasmReady || initStatus === "Initializing..."}
-              className="btn-hover w-full border border-[--ink] bg-[--ink] px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
+              className="btn-ink btn-ink-primary w-full border border-[--ink] bg-[--ink] px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
             >
-              Generate Name
+              <span className="btn-content">Generate Name</span>
             </button>
             <div
               className="mt-3 font-mono text-[11px] italic text-[--muted-ink]"
@@ -1186,22 +1467,149 @@ function InteractiveTrainerSection() {
   );
 }
 
+function AnimatedTitle({ children }: { children: React.ReactNode }) {
+  const text = typeof children === "string" ? children : "";
+  const letters = text.split("");
+
+  const [animatedCount, setAnimatedCount] = useState(0);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setAnimatedCount(letters.length);
+      return;
+    }
+
+    letters.forEach((_, i) => {
+      setTimeout(() => {
+        setAnimatedCount((prev) => prev + 1);
+      }, i * 40);
+    });
+  }, [letters.length]);
+
+  return (
+    <>
+      {letters.map((letter, i) => (
+        <span
+          key={i}
+          className={`title-letter ${i < animatedCount ? "animate" : ""}`}
+          style={{ animationDelay: `${i * 40}ms` }}
+        >
+          {letter}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function AnimatedSubtitle({ children }: { children: React.ReactNode }) {
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setAnimated(true);
+      return;
+    }
+
+    const timer = setTimeout(() => setAnimated(true), 300 + 40 * 6);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <span className={`subtitle-fade ${animated ? "animate" : ""}`}>
+      {children}
+    </span>
+  );
+}
+
+function AnimatedMarginRule() {
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setAnimated(true);
+      return;
+    }
+
+    const timer = setTimeout(() => setAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className={`fixed left-8 top-0 bottom-0 w-px bg-[--rule] pointer-events-none z-0 margin-rule ${animated ? "animate" : ""}`}
+      style={{
+        height: animated ? "100%" : "0%",
+      }}
+    />
+  );
+}
+
+function AnimatedSectionDivider() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (prefersReducedMotion) {
+      setAnimated(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setAnimated(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`section-divider ${animated ? "animate" : ""}`}
+      style={{ width: animated ? "100%" : "0%" }}
+    />
+  );
+}
+
 export default function App() {
   const [name, setName] = useState("emma");
 
   return (
     <main className="min-h-screen bg-[--paper] text-[--ink]">
-      <div className="fixed left-8 top-0 bottom-0 w-px bg-[--rule] pointer-events-none z-0 margin-rule" />
+      <AnimatedMarginRule />
       <div className="relative z-10 mx-auto max-w-5xl px-8 py-20">
         <header className="mb-16 border-b border-[--ink] pb-10">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
             Appendix · vol. 1 · §3.2
           </div>
           <h1 className="mt-4 font-serif text-5xl leading-[1.1] tracking-tight text-[--ink]">
-            miniGPT
+            <AnimatedTitle>miniGPT</AnimatedTitle>
             <span className="block font-serif text-2xl italic text-[--muted-ink]">
-              an interactive walkthrough of a 6 k-parameter transformer trained
-              on names.
+              <AnimatedSubtitle>
+                an interactive walkthrough of a 6 k-parameter transformer
+                trained on names.
+              </AnimatedSubtitle>
             </span>
           </h1>
           <p className="mt-8 max-w-2xl font-serif text-[15px] leading-[1.75] text-[--ink]">
@@ -1215,6 +1623,8 @@ export default function App() {
           </div>
         </header>
 
+        <AnimatedSectionDivider />
+
         <Section
           number="1"
           title="Tokenization"
@@ -1223,6 +1633,8 @@ export default function App() {
           <TokenizerPanel name={name} setName={setName} />
         </Section>
 
+        <AnimatedSectionDivider />
+
         <Section
           number="2"
           title="Embedding lookup"
@@ -1230,6 +1642,8 @@ export default function App() {
         >
           <EmbeddingPanel name={name} />
         </Section>
+
+        <AnimatedSectionDivider />
 
         <Section
           number="3"
@@ -1245,6 +1659,8 @@ export default function App() {
           </div>
         </Section>
 
+        <AnimatedSectionDivider />
+
         <Section
           number="4"
           title="Training dynamics"
@@ -1252,6 +1668,8 @@ export default function App() {
         >
           <LossPanel />
         </Section>
+
+        <AnimatedSectionDivider />
 
         <Section
           number="5"
@@ -1261,6 +1679,8 @@ export default function App() {
           <GenerationPanel />
         </Section>
 
+        <AnimatedSectionDivider />
+
         <Section
           number="6"
           title="Architecture"
@@ -1268,6 +1688,8 @@ export default function App() {
         >
           <ArchitecturePanel />
         </Section>
+
+        <AnimatedSectionDivider />
 
         <InteractiveTrainerSection />
 
