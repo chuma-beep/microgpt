@@ -626,9 +626,10 @@ input:hover,
 
 .arch-tooltip {
   position: absolute;
-  right: 1%;
+  /* right: 1%; */
+  left:calc(-5%  + 1px);
   top: 50%;
-  transform: translate(-50%, -50%) translateX(-6px);
+  transform: translateY(-50%) translateX(-6px);
   max-width: 280px;
   padding: 8px 12px;
   background-color: var(--paper);
@@ -637,17 +638,19 @@ input:hover,
   font-size: 13px;
   line-height: 1.5;
   color: var(--ink);
-  z-index: 20;
+  z-index: 50;
   pointer-events: none;
   opacity: 0;
   transition:
     opacity 150ms ease-in-out,
     transform 150ms ease-in-out;
+ white-space:normal;
+ word-wrap: break-word;
 }
 
 .arch-tooltip.visible {
   opacity: 1;
-  transform: translate(-50%, -50%) translateX(0) !important;
+  transform: translateY(-50%) translateX(0) !important;
 }
 
 @media (max-width: 639px) {
