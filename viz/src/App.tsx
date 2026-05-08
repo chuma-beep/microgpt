@@ -2010,7 +2010,7 @@ export default function App() {
             Appendix · vol. 1 · §3.2
           </div>
           <h1 className="mt-4 font-serif text-5xl leading-[1.1] tracking-tight text-[--ink]">
-            <AnimatedTitle>miniGPT</AnimatedTitle>
+            <AnimatedTitle>microGPT</AnimatedTitle>
             <span className="block font-serif text-2xl italic text-[--muted-ink]">
               <AnimatedSubtitle>
                 an interactive walkthrough of a 6 k-parameter transformer
