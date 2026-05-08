@@ -626,7 +626,7 @@ input:hover,
 
 .arch-tooltip {
   position: absolute;
-  left: 50%;
+  right: 1%;
   top: 50%;
   transform: translate(-50%, -50%) translateX(-6px);
   max-width: 280px;
