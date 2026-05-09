@@ -63,7 +63,7 @@ Flags:
 - **MLP**: fully connected, ReLU activation, 4× hidden dimension
 - **Normalization**: RMSNorm
 - **Optimizer**: Adam (β1=0.9, β2=0.999), lr=0.001
-- **Parameters**: ~4k total (4,192 with default 27-char vocab)
+- **Parameters**: ~4.2k total (4,224 with default 27-char vocab, including 2 × 16 RMSNorm gamma parameters)
 
 ## WASM / Browser
 

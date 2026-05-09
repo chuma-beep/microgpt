@@ -82,6 +82,15 @@ func NewGPT(tok *Tokenizer) *GPT {
 	addParam("layer0.attn_wo", newMatrix(nEmb, nEmb, 0.08))
 	addParam("layer0.mlp_fc1", newMatrix(4*nEmb, nEmb, 0.08))
 	addParam("layer0.mlp_fc2", newMatrix(nEmb, 4*nEmb, 0.08))
+	addParam("layer0.rms1_gamma", newMatrix(1, nEmb, 0.0))
+	addParam("layer0.rms2_gamma", newMatrix(1, nEmb, 0.0))
+	// Initialize gamma to 1.0
+	for i := range g.stateDict["layer0.rms1_gamma"].data {
+		g.stateDict["layer0.rms1_gamma"].data[i] = 1.0
+	}
+	for i := range g.stateDict["layer0.rms2_gamma"].data {
+		g.stateDict["layer0.rms2_gamma"].data[i] = 1.0
+	}
 	return g
 }
 
@@ -112,6 +121,8 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 	wte := g.stateDict["wte"]
 	wpe := g.stateDict["wpe"]
 	lmHead := g.stateDict["lm_head"]
+	rms1Gamma := g.stateDict["layer0.rms1_gamma"].data
+	rms2Gamma := g.stateDict["layer0.rms2_gamma"].data
 
 	keysCache := make([][][]float64, nLayer) // layer 0 only
 	valuesCache := make([][][]float64, nLayer)
@@ -124,12 +135,12 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		posEmb := wpe.row(pos)
 		x := vecAdd(tokEmb, posEmb)
 		cache.XRes[pos] = append([]float64(nil), x...)
-		x = rmsnorm(x)
+		x = rmsnorm(x, rms1Gamma)
 		cache.X[pos] = append([]float64(nil), x...)
 
 		// Attention block
 		xResAttn := append([]float64(nil), x...)
-		x = rmsnorm(x)
+		x = rmsnorm(x, rms1Gamma)
 
 		wq := g.stateDict["layer0.attn_wq"]
 		wk := g.stateDict["layer0.attn_wk"]
@@ -171,7 +182,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 
 		// MLP block
 		cache.XResMlp[pos] = append([]float64(nil), x...)
-		x = rmsnorm(x)
+		x = rmsnorm(x, rms2Gamma)
 		cache.MLPIn[pos] = append([]float64(nil), x...)
 		fc1 := g.stateDict["layer0.mlp_fc1"]
 		fc2 := g.stateDict["layer0.mlp_fc2"]
@@ -196,6 +207,18 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 func (g *GPT) Backward(cache *Cache) {
 	n := cache.Positions
 	vocabSize := g.tok.VocabSize
+
+	dkAccum := make([][]float64, n)
+	dvAccum := make([][]float64, n)
+	dxFromAttn := make([][]float64, n)
+	for i := 0; i < n; i++ {
+		dkAccum[i] = make([]float64, nEmb)
+		dvAccum[i] = make([]float64, nEmb)
+		dxFromAttn[i] = make([]float64, nEmb)
+	}
+
+	dGamma1 := make([]float64, nEmb)
+	dGamma2 := make([]float64, nEmb)
 
 	for pos := n - 1; pos >= 0; pos-- {
 		logits := cache.Logits[pos]
@@ -246,51 +269,123 @@ func (g *GPT) Backward(cache *Cache) {
 		}
 
 		xBeforeMlpNorm := cache.XResMlp[pos]
-		dXAfterMlpNorm := rmsnormBackward(dXResMlp, xBeforeMlpNorm)
+		dXAfterMlpNorm := rmsnormBackward(elemMul(dXResMlp, g.stateDict["layer0.rms2_gamma"].data), xBeforeMlpNorm)
+		// Gamma2 gradient: dgamma = dout * x_normalized
+		ms := 0.0
+		for _, v := range xBeforeMlpNorm {
+			ms += v * v
+		}
+		ms /= float64(nEmb)
+		invRms := 1.0 / math.Sqrt(ms+1e-5)
+		for i := range dGamma2 {
+			dGamma2[i] += dXResMlp[i] * xBeforeMlpNorm[i] * invRms
+		}
 
 		attnOut := cache.AttnConcat[pos]
 		wo := g.stateDict["layer0.attn_wo"]
-		_ = matVecMulT(wo.data, dXAfterMlpNorm, wo.rows, wo.cols)
+		dAttnOut := matVecMulT(wo.data, dXAfterMlpNorm, wo.rows, wo.cols)
 		dwoWeight := outerProdVecMat(dXAfterMlpNorm, attnOut)
 		addGrad(g.gradMap["layer0.attn_wo"], dwoWeight)
 
-		dXAfterAttn := make([]float64, nEmb)
-		for i := range dXAfterAttn {
-			dXAfterAttn[i] = dXAfterMlpNorm[i]
+		// Per-position incremental dk/dv for this attention computation
+		dkPerPos := make([][]float64, pos+1)
+		dvPerPos := make([][]float64, pos+1)
+		for t := 0; t <= pos; t++ {
+			dkPerPos[t] = make([]float64, nEmb)
+			dvPerPos[t] = make([]float64, nEmb)
 		}
 
-		dXAfterAttnNorm := make([]float64, nEmb)
-		for i := range dXAfterAttnNorm {
-			dXAfterAttnNorm[i] = dXAfterAttn[i]
-		}
+		dqFull := make([]float64, nEmb)
+		for h := 0; h < nHead; h++ {
+			hs := h * headDim
+			he := hs + headDim
+			dAttnOutHead := dAttnOut[hs:he]
 
-		xAfterAttnNorm := cache.X[pos]
-		dXAfterAttnNorm = rmsnormBackward(dXAfterAttnNorm, xAfterAttnNorm)
+			qHead := cache.Q[pos][hs:he]
+			kHeads := make([][]float64, pos+1)
+			vHeads := make([][]float64, pos+1)
+			for t := 0; t <= pos; t++ {
+				kHeads[t] = cache.K[t][hs:he]
+				vHeads[t] = cache.V[t][hs:he]
+			}
 
-		dXResidual := make([]float64, nEmb)
-		for i := range dXResidual {
-			dXResidual[i] = dXAfterAttnNorm[i]
+			weightStart := h * (pos + 1)
+			attnWeights := cache.AttnWeights[pos][weightStart : weightStart+pos+1]
+
+			dqHead, dkHeads, dvHeads := gradAttentionHead(dAttnOutHead, qHead, kHeads, vHeads, attnWeights, headDim)
+
+			for j := 0; j < headDim; j++ {
+				dqFull[hs+j] += dqHead[j]
+			}
+			for t := 0; t <= pos; t++ {
+				for j := 0; j < headDim; j++ {
+					dkAccum[t][hs+j] += dkHeads[t][j]
+					dvAccum[t][hs+j] += dvHeads[t][j]
+					dkPerPos[t][hs+j] += dkHeads[t][j]
+					dvPerPos[t][hs+j] += dvHeads[t][j]
+				}
+			}
 		}
 
 		wq := g.stateDict["layer0.attn_wq"]
 		wk := g.stateDict["layer0.attn_wk"]
 		wv := g.stateDict["layer0.attn_wv"]
 
-		dq := matVecMulT(wq.data, dXAfterAttnNorm, wq.rows, wq.cols)
-		dk := matVecMulT(wk.data, dXAfterAttnNorm, wk.rows, wk.cols)
-		dv := matVecMulT(wv.data, dXAfterAttnNorm, wv.rows, wv.cols)
-
+		// WQ gradient
 		xNorm := cache.X[pos]
-		dwqWeight := outerProdVecMat(dq, xNorm)
-		dwkWeight := outerProdVecMat(dk, xNorm)
-		dwvWeight := outerProdVecMat(dv, xNorm)
-
+		dwqWeight := outerProdVecMat(dqFull, xNorm)
 		addGrad(g.gradMap["layer0.attn_wq"], dwqWeight)
+
+		// WK/WV gradients from accumulated per-position dk/dv
+		dwkWeight := outerProdVecMat(dkAccum[pos], xNorm)
+		dwvWeight := outerProdVecMat(dvAccum[pos], xNorm)
 		addGrad(g.gradMap["layer0.attn_wk"], dwkWeight)
 		addGrad(g.gradMap["layer0.attn_wv"], dwvWeight)
 
+		// Accumulate dx contributions at each past position from this attention
+		for t := 0; t <= pos; t++ {
+			dxKt := matVecMulT(wk.data, dkPerPos[t], wk.rows, wk.cols)
+			dxVt := matVecMulT(wv.data, dvPerPos[t], wv.rows, wv.cols)
+			for i := range dxFromAttn[t] {
+				dxFromAttn[t][i] += dxKt[i] + dxVt[i]
+			}
+		}
+		dxQ := matVecMulT(wq.data, dqFull, wq.rows, wq.cols)
+		for i := range dxFromAttn[pos] {
+			dxFromAttn[pos][i] += dxQ[i]
+		}
+
+		// Residual path through rmsnorm
+		dXAfterAttnNorm := rmsnormBackward(elemMul(dXAfterMlpNorm, g.stateDict["layer0.rms1_gamma"].data), cache.X[pos])
+		// Gamma1 gradient
+		ms1 := 0.0
+		for _, v := range cache.X[pos] {
+			ms1 += v * v
+		}
+		ms1 /= float64(nEmb)
+		invRms1 := 1.0 / math.Sqrt(ms1+1e-5)
+		for i := range dGamma1 {
+			dGamma1[i] += dXAfterMlpNorm[i] * cache.X[pos][i] * invRms1
+		}
+		dXResidual := make([]float64, nEmb)
+		for i := range dXResidual {
+			dXResidual[i] = dXAfterAttnNorm[i] + dxFromAttn[pos][i]
+		}
+
 		dxNorm := dXResidual
-		dxNorm = rmsnormBackward(dxNorm, cache.XRes[pos])
+		dXResidualForGamma := make([]float64, nEmb)
+		copy(dXResidualForGamma, dxNorm)
+		dxNorm = rmsnormBackward(elemMul(dxNorm, g.stateDict["layer0.rms1_gamma"].data), cache.XRes[pos])
+		// Gamma1 gradient
+		ms2 := 0.0
+		for _, v := range cache.XRes[pos] {
+			ms2 += v * v
+		}
+		ms2 /= float64(nEmb)
+		invRms2 := 1.0 / math.Sqrt(ms2+1e-5)
+		for i := range dGamma1 {
+			dGamma1[i] += dXResidualForGamma[i] * cache.XRes[pos][i] * invRms2
+		}
 
 		tokenID := cache.Tokens[pos]
 		wteGrad := g.gradMap["wte"]
@@ -303,6 +398,8 @@ func (g *GPT) Backward(cache *Cache) {
 		wpeGrad := g.gradMap["wpe"]
 		addEmbedGrad(wpeGrad, pos, dxNorm)
 	}
+	addGrad(g.gradMap["layer0.rms1_gamma"], dGamma1)
+	addGrad(g.gradMap["layer0.rms2_gamma"], dGamma2)
 }
 
 func addGrad(m *matrix, grad []float64) {

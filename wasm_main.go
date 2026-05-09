@@ -16,6 +16,9 @@ func main() {
 	js.Global().Set("goTrainStep", js.FuncOf(goTrainStep))
 	js.Global().Set("goGenerate", js.FuncOf(goGenerate))
 	js.Global().Set("goGenerateWithProbs", js.FuncOf(goGenerateWithProbs))
+	js.Global().Set("goGetWTE", js.FuncOf(goGetWTE))
+	js.Global().Set("goGetWPE", js.FuncOf(goGetWPE))
+	js.Global().Set("goAttentionWeights", js.FuncOf(goAttentionWeights))
 	<-c
 }
 
@@ -76,4 +79,54 @@ func goGenerateWithProbs(this js.Value, args []js.Value) interface{} {
 	}
 	result["probs"] = probsFloat
 	return js.ValueOf(result)
+}
+
+func goGetWTE(this js.Value, args []js.Value) interface{} {
+	if globalGPT == nil {
+		return js.Undefined()
+	}
+	wte := globalGPT.stateDict["wte"]
+	result := make([]interface{}, len(wte.data))
+	for i, v := range wte.data {
+		result[i] = v
+	}
+	return js.ValueOf(result)
+}
+
+func goGetWPE(this js.Value, args []js.Value) interface{} {
+	if globalGPT == nil {
+		return js.Undefined()
+	}
+	wpe := globalGPT.stateDict["wpe"]
+	result := make([]interface{}, len(wpe.data))
+	for i, v := range wpe.data {
+		result[i] = v
+	}
+	return js.ValueOf(result)
+}
+
+func goAttentionWeights(this js.Value, args []js.Value) interface{} {
+	if globalGPT == nil || len(args) == 0 {
+		return js.Undefined()
+	}
+	name := args[0].String()
+	tokens := globalGPT.tok.Encode(name)
+	n := min(blockSize, len(tokens)-1)
+	if n < 1 {
+		return js.Undefined()
+	}
+	_, cache := globalGPT.ForwardSeq(tokens[:n+1])
+
+	// Flatten to [nHead * n * n] — head h, row i, col j
+	flat := make([]interface{}, nHead*n*n)
+	for pos := 0; pos < n; pos++ {
+		weights := cache.AttnWeights[pos]
+		for h := 0; h < nHead; h++ {
+			for j := 0; j <= pos; j++ {
+				idx := h*n*n + pos*n + j
+				flat[idx] = weights[h*(pos+1)+j]
+			}
+		}
+	}
+	return js.ValueOf(flat)
 }

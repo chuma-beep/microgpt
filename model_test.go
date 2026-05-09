@@ -18,22 +18,24 @@ func TestNewGPT(t *testing.T) {
 	gpt := NewGPT(tok)
 
 	expectedParams := map[string][2]int{
-		"wte":            {tok.VocabSize, nEmb},
-		"wpe":            {blockSize, nEmb},
-		"lm_head":        {tok.VocabSize, nEmb},
-		"layer0.attn_wq": {nEmb, nEmb},
-		"layer0.attn_wk": {nEmb, nEmb},
-		"layer0.attn_wv": {nEmb, nEmb},
-		"layer0.attn_wo": {nEmb, nEmb},
-		"layer0.mlp_fc1": {4 * nEmb, nEmb},
-		"layer0.mlp_fc2": {nEmb, 4 * nEmb},
+		"wte":               {tok.VocabSize, nEmb},
+		"wpe":               {blockSize, nEmb},
+		"lm_head":           {tok.VocabSize, nEmb},
+		"layer0.attn_wq":    {nEmb, nEmb},
+		"layer0.attn_wk":    {nEmb, nEmb},
+		"layer0.attn_wv":    {nEmb, nEmb},
+		"layer0.attn_wo":    {nEmb, nEmb},
+		"layer0.mlp_fc1":    {4 * nEmb, nEmb},
+		"layer0.mlp_fc2":    {nEmb, 4 * nEmb},
+		"layer0.rms1_gamma": {1, nEmb},
+		"layer0.rms2_gamma": {1, nEmb},
 	}
 
-	if len(gpt.params) != 9 {
-		t.Errorf("params count = %d, want 9", len(gpt.params))
+	if len(gpt.params) != 11 {
+		t.Errorf("params count = %d, want 11", len(gpt.params))
 	}
-	if len(gpt.grads) != 9 {
-		t.Errorf("grads count = %d, want 9", len(gpt.grads))
+	if len(gpt.grads) != 11 {
+		t.Errorf("grads count = %d, want 11", len(gpt.grads))
 	}
 
 	for name, dims := range expectedParams {

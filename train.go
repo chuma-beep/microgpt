@@ -222,11 +222,11 @@ func (g *GPT) GenerateWithProbs(temperature float64) (string, []float64) {
 		tokEmb := wte.row(token)
 		posEmb := wpe.row(pos)
 		x := vecAdd(tokEmb, posEmb)
-		x = rmsnorm(x)
+		x = rmsnorm(x, g.stateDict["layer0.rms1_gamma"].data)
 
 		// Attention block
 		xResAttn := append([]float64(nil), x...)
-		x = rmsnorm(x)
+		x = rmsnorm(x, g.stateDict["layer0.rms1_gamma"].data)
 
 		wq := g.stateDict["layer0.attn_wq"]
 		wk := g.stateDict["layer0.attn_wk"]
@@ -260,7 +260,7 @@ func (g *GPT) GenerateWithProbs(temperature float64) (string, []float64) {
 
 		// MLP block
 		xResMlp := append([]float64(nil), x...)
-		x = rmsnorm(x)
+		x = rmsnorm(x, g.stateDict["layer0.rms2_gamma"].data)
 		fc1 := g.stateDict["layer0.mlp_fc1"]
 		fc2 := g.stateDict["layer0.mlp_fc2"]
 		x = matVecMul(fc1.data, x, fc1.rows, fc1.cols)

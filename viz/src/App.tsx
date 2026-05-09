@@ -34,7 +34,24 @@ function hashFloat(seed: number) {
   return x - Math.floor(x);
 }
 
+let wasmWTE: number[] | null = null;
+let wasmWPE: number[] | null = null;
+
+function loadWasmWeights() {
+  if (wasmWTE) return;
+  if (window.wasmReady && window.goGetWTE && window.goGetWPE) {
+    wasmWTE = window.goGetWTE();
+    wasmWPE = window.goGetWPE();
+  }
+}
+
 function tokenEmbedding(idx: number): number[] {
+  if (wasmWTE) {
+    const vocabSize = wasmWTE.length / 16;
+    if (idx >= 0 && idx < vocabSize) {
+      return wasmWTE.slice(idx * 16, idx * 16 + 16);
+    }
+  }
   return Array.from(
     { length: 16 },
     (_, k) => hashFloat(idx * 31 + k * 7 + 1) * 2 - 1,
@@ -42,6 +59,11 @@ function tokenEmbedding(idx: number): number[] {
 }
 
 function positionalEmbedding(pos: number): number[] {
+  if (wasmWPE) {
+    if (pos >= 0 && pos < 16) {
+      return wasmWPE.slice(pos * 16, pos * 16 + 16);
+    }
+  }
   return Array.from({ length: 16 }, (_, k) => {
     const denom = Math.pow(10000, (2 * Math.floor(k / 2)) / 16);
     return k % 2 === 0 ? Math.sin(pos / denom) : Math.cos(pos / denom);
@@ -55,7 +77,23 @@ function softmaxRow(scores: number[]) {
   return exps.map((e) => e / sum);
 }
 
-function attentionMatrix(tokens: number[], headSeed: number = 0) {
+function attentionMatrix(tokens: number[], headSeed: number = 0, name?: string) {
+  if (wasmWTE && name && window.goAttentionWeights) {
+    const flat = window.goAttentionWeights(name);
+    if (flat && flat.length > 0) {
+      const n = tokens.length;
+      const headWeights: number[][] = [];
+      for (let i = 0; i < n; i++) {
+        const row: number[] = [];
+        for (let j = 0; j < n; j++) {
+          const idx = headSeed * n * n + i * n + j;
+          row.push(j <= i ? (flat[idx] ?? 0) : 0);
+        }
+        headWeights.push(row);
+      }
+      return headWeights;
+    }
+  }
   const n = tokens.length;
   const rows: number[][] = [];
   for (let i = 0; i < n; i++) {
@@ -619,7 +657,7 @@ function AttentionPanel({ name }: { name: string }) {
   const headsMatrices = useMemo(() => {
     const heads = [];
     for (let h = 0; h < 4; h++) {
-      heads.push(attentionMatrix(tokens, h));
+      heads.push(attentionMatrix(tokens, h, name));
     }
     return heads;
   }, [tokens]);
@@ -1233,9 +1271,10 @@ const BLOCKS = [
   { name: "Input Tokens", params: "—" },
   { name: "Token Embedding (27 × 16)", params: "432 p" },
   { name: "Positional Embedding (16 × 16)", params: "256 p" },
-  { name: "RMSNorm", params: "—" },
+  { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "4-Head Attention", params: "1,024 p" },
   { name: "Residual ⊕", params: "—" },
+  { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "MLP (16→64→16)", params: "2,048 p" },
   { name: "Residual ⊕", params: "—" },
   { name: "LM Head (16 × 27)", params: "432 p" },
@@ -1247,14 +1286,15 @@ const TOOLTIPS: Record<number, string> = {
   0: "Each character of the name is converted to a number. 'a' becomes 1, 'b' becomes 2, and so on. The boundary marker · becomes 0.",
   1: "Each token number is looked up in a table of learned vectors. Think of it as converting a simple number into a rich 16-dimensional description the model can reason about. This table has 432 learnable values.",
   2: "Encodes the position of each character (0, 1, 2, …) as a sinusoidal pattern, scaled so that close positions have similar representations. 256 learnable values.",
-  3: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm is a simpler, faster alternative to the more common LayerNorm.",
-  4: "The attention mechanism lets each character look at the characters before it and decide which ones matter most for predicting the next character. Four independent heads run in parallel, each attending to different patterns. 'Q' asks a question, 'K' holds answers, 'V' holds the actual information.",
-  5: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network — a key insight from ResNet.",
-  6: "A small feedforward network that processes each position independently. It expands the 16-dimensional vector to 64, applies a non-linearity (ReLU), then compresses back to 16. This is where most pattern memorisation happens.",
-  7: "Another shortcut connection, this time around the MLP block. Same idea — preserves information and makes gradients flow more easily during training.",
-  8: "The final projection that converts the 16-dimensional vector back into 27 scores — one for each possible next character. Higher score means the model thinks that character is more likely to come next.",
-  9: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character — temperature controls how random this sampling is.",
-  10: "The final result — a probability for each of the 27 tokens. The model samples one token from this distribution, appends it to the name, and repeats the whole process until it generates the boundary marker ·.",
+  3: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm has 16 learnable scale parameters.",
+  4: "The attention mechanism lets each character look at the characters before it and decide which ones matter most for predicting the next character. Four independent heads run in parallel, each attending to different patterns.",
+  5: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network.",
+  6: "A second RMSNorm layer before the MLP block. Same operation, separate learnable scale parameters.",
+  7: "A small feedforward network that processes each position independently. Expands from 16→64, applies ReLU, then compresses back to 16. 2,048 learnable values.",
+  8: "Another shortcut connection around the MLP block — preserves information and makes gradients flow more easily.",
+  9: "The final projection that converts the 16-dimensional vector into 27 scores — one for each possible next character.",
+  10: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character.",
+  11: "The final result — a probability for each of the 27 tokens. The model samples one token, appends it, and repeats until the boundary marker.",
 };
 
 function ArchitecturePanel() {
@@ -1441,7 +1481,7 @@ function ArchitecturePanel() {
 
       {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Total 4,192 parameters — token embeddings 432, positional embeddings 256,
+        Total 4,224 parameters — token embeddings 432, positional 256, RMSNorm 2×16,
         4-head attention 1,024, MLP 2,048, LM head 432. The smallest
         configuration that still learns plausible English-looking name
         morphology.
@@ -2004,6 +2044,14 @@ function AnimatedSectionDivider() {
 
 export default function App() {
   const [name, setName] = useState("emma");
+
+  useEffect(() => {
+    if (window.wasmReady) {
+      loadWasmWeights();
+    } else {
+      window.addEventListener("wasmReady", loadWasmWeights);
+    }
+  }, []);
 
   return (
     <main className="min-h-screen bg-[--paper] text-[--ink]">

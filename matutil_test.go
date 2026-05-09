@@ -54,7 +54,7 @@ func TestSoftmaxSingleElement(t *testing.T) {
 
 func TestRMSNorm(t *testing.T) {
 	x := []float64{3, 4}
-	out := rmsnorm(x)
+	out := rmsnorm(x, nil)
 
 	// ms = (9+16)/2 = 12.5, scale = 1/sqrt(12.5+1e-5) ≈ 0.282843
 	expected0 := 3 * 0.282843
@@ -75,6 +75,22 @@ func TestRMSNorm(t *testing.T) {
 	rms := math.Sqrt(ms)
 	if math.Abs(rms-1.0) > 1e-5 {
 		t.Errorf("RMS of normalized output = %f, want ~1.0", rms)
+	}
+}
+
+func TestRMSNormWithGamma(t *testing.T) {
+	x := []float64{3, 4}
+	gamma := []float64{2.0, 0.5}
+	out := rmsnorm(x, gamma)
+
+	g := rmsnorm(x, nil)
+	expected0 := g[0] * 2.0
+	expected1 := g[1] * 0.5
+	if math.Abs(out[0]-expected0) > 1e-8 {
+		t.Errorf("rmsnorm with gamma[0] = %f, want ~%f", out[0], expected0)
+	}
+	if math.Abs(out[1]-expected1) > 1e-8 {
+		t.Errorf("rmsnorm with gamma[1] = %f, want ~%f", out[1], expected1)
 	}
 }
 
@@ -199,11 +215,11 @@ func TestGradRMSNorm(t *testing.T) {
 		save := x[i]
 
 		x[i] = save + eps
-		yPlus := rmsnorm(x)
+		yPlus := rmsnorm(x, nil)
 		lossPlus := sum(yPlus)
 
 		x[i] = save - eps
-		yMinus := rmsnorm(x)
+		yMinus := rmsnorm(x, nil)
 		lossMinus := sum(yMinus)
 
 		x[i] = save

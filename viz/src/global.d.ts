@@ -5,6 +5,9 @@ declare global {
     goTrainStep: () => number;
     goGenerate: (temperature: number) => string;
     goGenerateWithProbs: (temperature: number) => { name: string; probs: number[] };
+    goGetWTE: () => number[];
+    goGetWPE: () => number[];
+    goAttentionWeights: (name: string) => number[] | undefined;
   }
 }
 

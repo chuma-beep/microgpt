@@ -23,7 +23,7 @@ func softmax(x []float64) []float64 {
 	return out
 }
 
-func rmsnorm(x []float64) []float64 {
+func rmsnorm(x []float64, gamma []float64) []float64 {
 	ms := 0.0
 	for _, v := range x {
 		ms += v * v
@@ -33,6 +33,9 @@ func rmsnorm(x []float64) []float64 {
 	out := make([]float64, len(x))
 	for i, v := range x {
 		out[i] = v * scale
+		if gamma != nil {
+			out[i] *= gamma[i]
+		}
 	}
 	return out
 }
@@ -93,6 +96,14 @@ func vecScale(c float64, x []float64) []float64 {
 	out := make([]float64, len(x))
 	for i, v := range x {
 		out[i] = c * v
+	}
+	return out
+}
+
+func elemMul(a, b []float64) []float64 {
+	out := make([]float64, len(a))
+	for i := range a {
+		out[i] = a[i] * b[i]
 	}
 	return out
 }
