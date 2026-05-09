@@ -21,4 +21,7 @@ type Cache struct {
 	MLPIn   [][]float64 // after RMSNorm before fc1
 	MLPReLU [][]float64 // after ReLU
 	MLPOut  [][]float64 // after fc2, before residual add
+
+	// Final hidden state (after MLP residual, before lm_head)
+	FinalX [][]float64
 }

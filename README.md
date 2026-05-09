@@ -53,6 +53,7 @@ Flags:
 - `-steps` — training iterations (default: 10000)
 - `-temperature` — sampling temperature (default: 0.5). Lower is more conservative, higher is more varied.
 - `-weights` — path to weights file (default: weights.bin)
+- `-generate` — skip training and generate names from saved weights only
 
 ## Architecture
 
@@ -62,7 +63,17 @@ Flags:
 - **MLP**: fully connected, ReLU activation, 4× hidden dimension
 - **Normalization**: RMSNorm
 - **Optimizer**: Adam (β1=0.9, β2=0.999), lr=0.001
-- **Parameters**: ~6k total
+- **Parameters**: ~4k total (4,192 with default 27-char vocab)
+
+## WASM / Browser
+
+A WebAssembly build target is provided via `wasm_main.go` (`//go:build js && wasm`). Build with:
+
+```bash
+GOOS=js GOARCH=wasm go build -o microgpt.wasm
+```
+
+The `viz/` directory contains a React + Vite + TypeScript frontend for interactive browser-based training and generation.
 
 ## Why no gonum
 
@@ -103,16 +114,39 @@ Both bugs produced the same symptom — loss bouncing at random-chance level (~3
 
 ```
 microgpt/
-├── main.go          # CLI flags, calls Run()
-├── train.go         # training loop, weight save/load, generation
-├── model.go         # GPT struct, forward pass, backward pass
-├── attention.go     # single-head attention forward
-├── grad_attention.go # attention backward
-├── cache.go         # activations stored for backward pass
-├── tokenizer.go     # character-level tokenizer, BOS encoding
-├── matutil.go       # matrix ops, softmax, rmsnorm, relu
-└── adam.go          # Adam optimizer
+├── main.go            # CLI flags, calls Run()
+├── data.go            # download and parse names.txt
+├── train.go           # training loop, weight save/load, generation
+├── model.go           # GPT struct, forward pass, backward pass
+├── attention.go       # single-head attention forward
+├── grad_attention.go  # attention backward
+├── cache.go           # activations stored for backward pass
+├── tokenizer.go       # character-level tokenizer, BOS encoding
+├── matutil.go         # matrix ops, softmax, rmsnorm, relu
+├── adam.go            # Adam optimizer
+├── wasm_main.go       # WebAssembly build target (go:build js)
+├── viz/               # React/Vite visualization frontend
+├── *_test.go          # unit and gradient-check tests
+├── go.mod
+├── go.sum
+├── agent.md
+└── weights.bin
 ```
+
+## Testing
+
+```bash
+go test ./... -v
+```
+
+Test coverage includes:
+- **Math primitives**: softmax, rmsnorm, relu, matrix-vector ops, outer product — with hand-computed expected values
+- **Gradient checks**: finite-difference validation for RMSNorm backward, linear layer backward, and single-head attention backward
+- **Model**: directional gradient check on full `ForwardSeq` + `Backward`, parameter dimension verification, all-gradient-nonzero check
+- **Optimizer**: Adam update correctness, step direction, momentum/velocity tracking
+- **Tokenizer**: encode/decode roundtrip, BOS wrapping, edge cases (empty input, single char)
+- **Weights**: save/load roundtrip binary fidelity
+- **Convergence**: end-to-end training on small dataset, loss must decrease
 
 ---
 

@@ -107,6 +107,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		MLPIn:       make([][]float64, n),
 		MLPReLU:     make([][]float64, n),
 		MLPOut:      make([][]float64, n),
+		FinalX:      make([][]float64, n),
 	}
 	wte := g.stateDict["wte"]
 	wpe := g.stateDict["wpe"]
@@ -180,6 +181,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		x = matVecMul(fc2.data, x, fc2.rows, fc2.cols)
 		cache.MLPOut[pos] = append([]float64(nil), x...)
 		x = vecAdd(x, cache.XResMlp[pos])
+		cache.FinalX[pos] = append([]float64(nil), x...)
 
 		logits := matVecMul(lmHead.data, x, lmHead.rows, lmHead.cols)
 		cache.Logits[pos] = logits
@@ -211,6 +213,8 @@ func (g *GPT) Backward(cache *Cache) {
 		}
 
 		lmHead := g.stateDict["lm_head"]
+		dlmHeadWeight := outerProdVecMat(dlogits, cache.FinalX[pos])
+		addGrad(g.gradMap["lm_head"], dlmHeadWeight)
 		dxAfterResidual := matVecMulT(lmHead.data, dlogits, lmHead.rows, lmHead.cols)
 
 		dx := dxAfterResidual
@@ -289,15 +293,15 @@ func (g *GPT) Backward(cache *Cache) {
 		dxNorm = rmsnormBackward(dxNorm, cache.XRes[pos])
 
 		tokenID := cache.Tokens[pos]
-		wte := g.stateDict["wte"]
+		wteGrad := g.gradMap["wte"]
 		dtokEmb := make([]float64, nEmb)
 		for i := range dtokEmb {
 			dtokEmb[i] = dxNorm[i]
 		}
-		addTokenGrad(wte, tokenID, dtokEmb)
+		addEmbedGrad(wteGrad, tokenID, dtokEmb)
 
-		posEmb := g.stateDict["wpe"]
-		addPosGrad(posEmb, pos, dxNorm)
+		wpeGrad := g.gradMap["wpe"]
+		addEmbedGrad(wpeGrad, pos, dxNorm)
 	}
 }
 
@@ -355,16 +359,9 @@ func rmsnormBackward(dy, x []float64) []float64 {
 	return dx
 }
 
-func addTokenGrad(wte *matrix, token int, grad []float64) {
-	start := token * nEmb
+func addEmbedGrad(m *matrix, row int, grad []float64) {
+	start := row * m.cols
 	for i := range grad {
-		wte.data[start+i] += grad[i]
-	}
-}
-
-func addPosGrad(wpe *matrix, pos int, grad []float64) {
-	start := pos * nEmb
-	for i := range grad {
-		wpe.data[start+i] += grad[i]
+		m.data[start+i] += grad[i]
 	}
 }
