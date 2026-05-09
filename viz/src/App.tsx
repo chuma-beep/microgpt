@@ -90,16 +90,16 @@ const LOSS_DATA = [
 ];
 
 const GENERATIONS: { name: string; probs: number[] }[] = [
-  { name: "mena", probs: [0.41, 0.62, 0.55, 0.48] },
-  { name: "marian", probs: [0.39, 0.58, 0.46, 0.61, 0.52, 0.44] },
-  { name: "carien", probs: [0.27, 0.51, 0.49, 0.42, 0.55, 0.4] },
-  { name: "annie", probs: [0.44, 0.71, 0.63, 0.58, 0.49] },
-  { name: "anayne", probs: [0.42, 0.66, 0.4, 0.45, 0.52, 0.38] },
-  { name: "meelyn", probs: [0.4, 0.61, 0.59, 0.36, 0.47, 0.41] },
-  { name: "ajurle", probs: [0.3, 0.22, 0.31, 0.4, 0.44, 0.37] },
-  { name: "aliee", probs: [0.45, 0.57, 0.6, 0.53, 0.48] },
-  { name: "rera", probs: [0.33, 0.49, 0.43, 0.51] },
-  { name: "ancdy", probs: [0.41, 0.55, 0.28, 0.34, 0.39] },
+  { name: "mena", probs: [] },
+  { name: "marian", probs: [] },
+  { name: "carien", probs: [] },
+  { name: "annie", probs: [] },
+  { name: "anayne", probs: [] },
+  { name: "meelyn", probs: [] },
+  { name: "ajurle", probs: [] },
+  { name: "aliee", probs: [] },
+  { name: "rera", probs: [] },
+  { name: "ancdy", probs: [] },
 ];
 
 function FlipNumber({
@@ -785,6 +785,9 @@ function AttentionPanel({ name }: { name: string }) {
 
 function LossPanel() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [isTouch, setIsTouch] = useState(
+    "ontouchstart" in window || navigator.maxTouchPoints > 0,
+  );
   const [visible, setVisible] = useState(false);
   const [lineDrawn, setLineDrawn] = useState(false);
   const [axisVisible, setAxisVisible] = useState(false);
@@ -994,7 +997,7 @@ function LossPanel() {
           </LineChart>
         </ResponsiveContainer>
 
-        {crosshair && (
+        {crosshair && !isTouch && (
           <div
             className="loss-crosshair visible"
             style={{
@@ -1009,7 +1012,7 @@ function LossPanel() {
           />
         )}
 
-        {crosshair && (
+        {crosshair && !isTouch && (
           <div
             className="loss-tooltip visible"
             style={{
@@ -1148,11 +1151,16 @@ function GenerationPanel() {
   }, []);
 
   const handleGenerate = async () => {
-    const name = await new Promise<string>((resolve) => {
-      resolve(window.goGenerate(0.5));
-    });
-    const newGen = { name, probs: [0.41, 0.62, 0.55, 0.48, 0.52] };
-    setGenerations((prev) => [...prev, newGen]);
+    const result = await new Promise<{ name: string; probs: number[] }>(
+      (resolve) => {
+        if (wasmReady) {
+          resolve(window.goGenerateWithProbs(0.5));
+        } else {
+          resolve({ name: window.goGenerate(0.5), probs: [] });
+        }
+      },
+    );
+    setGenerations((prev) => [...prev, result]);
     setShown((s) => s + 1);
   };
 
@@ -1223,13 +1231,14 @@ function GenerationPanel() {
 
 const BLOCKS = [
   { name: "Input Tokens", params: "—" },
-  { name: "Embedding (27 × 16 = 432 p)", params: "27 × 16  =  432 p" },
-  { name: "RMSNorm (16 p)", params: "16 p" },
-  { name: "Attention (1H) (≈ 3.1k p)", params: "≈ 3.1 k p" },
+  { name: "Token Embedding (27 × 16)", params: "432 p" },
+  { name: "Positional Embedding (16 × 16)", params: "256 p" },
+  { name: "RMSNorm", params: "—" },
+  { name: "4-Head Attention", params: "1,024 p" },
   { name: "Residual ⊕", params: "—" },
-  { name: "MLP (16→64→16) (≈ 2.1k p)", params: "≈ 2.1 k p" },
+  { name: "MLP (16→64→16)", params: "2,048 p" },
   { name: "Residual ⊕", params: "—" },
-  { name: "LM Head (16 × 27 = 432 p)", params: "16 × 27  =  432 p" },
+  { name: "LM Head (16 × 27)", params: "432 p" },
   { name: "Softmax", params: "—" },
   { name: "Output Distribution (27 dims)", params: "27 dims" },
 ];
@@ -1237,14 +1246,15 @@ const BLOCKS = [
 const TOOLTIPS: Record<number, string> = {
   0: "Each character of the name is converted to a number. 'a' becomes 1, 'b' becomes 2, and so on. The boundary marker · becomes 0.",
   1: "Each token number is looked up in a table of learned vectors. Think of it as converting a simple number into a rich 16-dimensional description the model can reason about. This table has 432 learnable values.",
-  2: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm is a simpler, faster alternative to the more common LayerNorm.",
-  3: "The attention mechanism lets each character look at the characters before it and decide which ones matter most for predicting the next character. 'Q' asks a question, 'K' holds answers, 'V' holds the actual information.",
-  4: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network — a key insight from ResNet.",
-  5: "A small feedforward network that processes each position independently. It expands the 16-dimensional vector to 64, applies a non-linearity (ReLU), then compresses back to 16. This is where most pattern memorisation happens.",
-  6: "Another shortcut connection, this time around the MLP block. Same idea — preserves information and makes gradients flow more easily during training.",
-  7: "The final projection that converts the 16-dimensional vector back into 27 scores — one for each possible next character. Higher score means the model thinks that character is more likely to come next.",
-  8: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character — temperature controls how random this sampling is.",
-  9: "The final result — a probability for each of the 27 tokens. The model samples one token from this distribution, appends it to the name, and repeats the whole process until it generates the boundary marker ·.",
+  2: "Encodes the position of each character (0, 1, 2, …) as a sinusoidal pattern, scaled so that close positions have similar representations. 256 learnable values.",
+  3: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm is a simpler, faster alternative to the more common LayerNorm.",
+  4: "The attention mechanism lets each character look at the characters before it and decide which ones matter most for predicting the next character. Four independent heads run in parallel, each attending to different patterns. 'Q' asks a question, 'K' holds answers, 'V' holds the actual information.",
+  5: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network — a key insight from ResNet.",
+  6: "A small feedforward network that processes each position independently. It expands the 16-dimensional vector to 64, applies a non-linearity (ReLU), then compresses back to 16. This is where most pattern memorisation happens.",
+  7: "Another shortcut connection, this time around the MLP block. Same idea — preserves information and makes gradients flow more easily during training.",
+  8: "The final projection that converts the 16-dimensional vector back into 27 scores — one for each possible next character. Higher score means the model thinks that character is more likely to come next.",
+  9: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character — temperature controls how random this sampling is.",
+  10: "The final result — a probability for each of the 27 tokens. The model samples one token from this distribution, appends it to the name, and repeats the whole process until it generates the boundary marker ·.",
 };
 
 function ArchitecturePanel() {
@@ -1253,10 +1263,10 @@ function ArchitecturePanel() {
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
+  // Detect touch or narrow screens (tablets + phones)
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
+      setIsMobile(window.innerWidth < 1024);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -1431,9 +1441,10 @@ function ArchitecturePanel() {
 
       {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Total ≈ 6.1 k parameters. A single attention head, one transformer
-        block, no layer stacking. The smallest configuration that still learns
-        plausible English-looking name morphology.
+        Total 4,192 parameters — token embeddings 432, positional embeddings 256,
+        4-head attention 1,024, MLP 2,048, LM head 432. The smallest
+        configuration that still learns plausible English-looking name
+        morphology.
       </p>
 
       {/* Simplified version – only shown on desktop */}
@@ -1640,30 +1651,34 @@ function InteractiveTrainerSection() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileInitialized, setMobileInitialized] = useState(false);
   const [mobileNames, setMobileNames] = useState<string[]>([]);
+  const initRef = useRef(false);
+
+  const safeInit = (cb?: () => void) => {
+    if (initRef.current) return;
+    initRef.current = true;
+    setWasmReady(true);
+    window.goInit((err: string | null, result: string) => {
+      if (err) {
+        setInitStatus(`error: ${err}`);
+      } else {
+        setInitStatus("ready");
+      }
+      initRef.current = false;
+      cb?.();
+    });
+  };
 
   useEffect(() => {
-    const init = () => {
-      setWasmReady(true);
-      window.goInit((err: string | null, result: string) => {
-        if (err) {
-          setInitStatus(`error: ${err}`);
-        } else {
-          setInitStatus("ready");
-        }
-      });
-    };
     if (window.wasmReady) {
-      init();
+      safeInit();
     } else {
-      window.addEventListener("wasmReady", init);
+      window.addEventListener("wasmReady", () => safeInit());
     }
   }, []);
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile =
-        window.innerWidth < 768 ||
-        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
     };
     checkMobile();
@@ -1679,27 +1694,16 @@ function InteractiveTrainerSection() {
     setGenerated([]);
     setShowGenerate(false);
     setInitStatus("initializing model...");
-    window.goInit((err: string | null, result: string) => {
-      if (err) {
-        setInitStatus(`error: ${err}`);
-      } else {
-        setInitStatus("ready");
-      }
-    });
+    safeInit();
   };
 
   const handleMobileGenerate = () => {
     if (!mobileInitialized) {
       setInitStatus("Initializing...");
-      window.goInit((err: string | null, result: string) => {
-        if (err) {
-          setInitStatus("error: " + err);
-        } else {
-          setInitStatus("ready");
-          setMobileInitialized(true);
-          const name = window.goGenerate(0.5);
-          setMobileNames((prev) => [...prev, name]);
-        }
+      safeInit(() => {
+        setMobileInitialized(true);
+        const name = window.goGenerate(0.5);
+        setMobileNames((prev) => [...prev, name]);
       });
       return;
     }
@@ -2013,8 +2017,8 @@ export default function App() {
             <AnimatedTitle>microGPT</AnimatedTitle>
             <span className="block font-serif text-2xl italic text-[--muted-ink]">
               <AnimatedSubtitle>
-                an interactive walkthrough of a 6 k-parameter transformer
-                trained on names.
+              an interactive walkthrough of a 4 k-parameter transformer
+              trained on names.
               </AnimatedSubtitle>
             </span>
           </h1>
@@ -2090,7 +2094,7 @@ export default function App() {
         <Section
           number="6"
           title="Architecture"
-          caption="The full forward graph. Residual additions are shown explicitly; normalisation is RMSNorm rather than LayerNorm. The LM head is tied to the input embedding."
+          caption="The full forward graph. Residual additions are shown explicitly; normalisation is RMSNorm rather than LayerNorm."
         >
           <ArchitecturePanel />
         </Section>

@@ -15,6 +15,7 @@ func main() {
 	js.Global().Set("goInit", js.FuncOf(goInit))
 	js.Global().Set("goTrainStep", js.FuncOf(goTrainStep))
 	js.Global().Set("goGenerate", js.FuncOf(goGenerate))
+	js.Global().Set("goGenerateWithProbs", js.FuncOf(goGenerateWithProbs))
 	<-c
 }
 
@@ -56,4 +57,23 @@ func goGenerate(this js.Value, args []js.Value) interface{} {
 		temperature = args[0].Float()
 	}
 	return js.ValueOf(globalGPT.Generate(temperature))
+}
+
+func goGenerateWithProbs(this js.Value, args []js.Value) interface{} {
+	if globalGPT == nil {
+		return js.Undefined()
+	}
+	temperature := 0.5
+	if len(args) > 0 {
+		temperature = args[0].Float()
+	}
+	name, probs := globalGPT.GenerateWithProbs(temperature)
+	result := make(map[string]interface{})
+	result["name"] = name
+	probsFloat := make([]interface{}, len(probs))
+	for i, p := range probs {
+		probsFloat[i] = p
+	}
+	result["probs"] = probsFloat
+	return js.ValueOf(result)
 }

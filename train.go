@@ -199,9 +199,16 @@ func Run(steps int, genTemp float64, weightsPath string, generateOnly bool) {
 
 // Generate samples using the trained GPT
 func (g *GPT) Generate(temperature float64) string {
+	name, _ := g.GenerateWithProbs(temperature)
+	return name
+}
+
+// GenerateWithProbs samples names and returns per-character probabilities.
+func (g *GPT) GenerateWithProbs(temperature float64) (string, []float64) {
 	tok := g.tok
 	token := tok.BOS
 	sample := make([]byte, 0)
+	probsList := make([]float64, 0)
 
 	// We'll reuse forward step logic without caching
 	// Simplified: we only need to run one token at a time, but we must maintain KV caches.
@@ -282,10 +289,11 @@ func (g *GPT) Generate(temperature float64) string {
 		if next == tok.BOS {
 			break
 		}
+		probsList = append(probsList, probs[next])
 		sample = append(sample, tok.IdxToChar[next])
 		token = next
 	}
-	return string(sample)
+	return string(sample), probsList
 }
 
 func sampleMultinomial(probs []float64) int {
