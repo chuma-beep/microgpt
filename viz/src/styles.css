@@ -690,6 +690,18 @@ input:hover,
 }
 
 /* ========================================
+   TRAINING ACTIVE INDICATOR
+   ======================================== */
+@keyframes training-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.training-pulse-dot {
+  animation: training-pulse 1.2s ease-in-out infinite;
+}
+
+/* ========================================
    FLIP COUNTER
    ======================================== */
 

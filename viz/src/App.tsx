@@ -79,21 +79,26 @@ function softmaxRow(scores: number[]) {
 
 function attentionMatrix(tokens: number[], headSeed: number = 0, name?: string) {
   if (wasmWTE && name && window.goAttentionWeights) {
-    const flat = window.goAttentionWeights(name);
-    if (flat && flat.length > 0) {
-      const n = tokens.length;
-      const headWeights: number[][] = [];
-      for (let i = 0; i < n; i++) {
-        const row: number[] = [];
-        for (let j = 0; j < n; j++) {
-          const idx = headSeed * n * n + i * n + j;
-          row.push(j <= i ? (flat[idx] ?? 0) : 0);
+    try {
+      const flat = window.goAttentionWeights(name);
+      if (flat && flat.length > 0) {
+        const n = tokens.length;
+        const headWeights: number[][] = [];
+        for (let i = 0; i < n; i++) {
+          const row: number[] = [];
+          for (let j = 0; j < n; j++) {
+            const idx = headSeed * n * n + i * n + j;
+            row.push(j <= i ? (flat[idx] ?? 0) : 0);
+          }
+          headWeights.push(row);
         }
-        headWeights.push(row);
+        return headWeights;
       }
-      return headWeights;
+    } catch (_) {
+      // WASM not ready, fall through to synthetic
     }
   }
+
   const n = tokens.length;
   const rows: number[][] = [];
   for (let i = 0; i < n; i++) {
@@ -1592,14 +1597,24 @@ function InteractiveTrainerDesktop(props: {
           </button>
         </div>
 
-        <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] training-stats">
-          {initStatus}
-          {initStatus === "ready" && step > 0 && (
-            <span className="ml-4">
-              step <FlipNumber value={step} decimals={0} /> / 10000 · loss{" "}
-              {loss !== null ? <FlipNumber value={loss} /> : "—"}
-            </span>
-          )}
+        <div className="mb-6 font-mono text-xs uppercase tracking-[0.18em] training-stats">
+          <div
+            key={training ? "training" : "idle"}
+            className={`inline-flex items-center gap-2 border px-3 py-2 ${training ? "border-[--ink] text-[--ink]" : "border-[--rule] text-[--muted-ink]"}`}
+          >
+            {training ? (
+              <>
+                <span
+                  className="inline-block h-3 w-3 rounded-full training-pulse-dot"
+                  style={{ backgroundColor: INK }}
+                />
+                training live — step {step} / 10000 · loss{" "}
+                {loss !== null ? loss.toFixed(4) : "—"}
+              </>
+            ) : (
+              <>{initStatus}</>
+            )}
+          </div>
         </div>
 
         {lossHistory.length > 0 && (
@@ -1692,6 +1707,9 @@ function InteractiveTrainerSection() {
   const [mobileInitialized, setMobileInitialized] = useState(false);
   const [mobileNames, setMobileNames] = useState<string[]>([]);
   const initRef = useRef(false);
+  const stepRef = useRef(0);
+  const trainingRef = useRef(false);
+  const showGenerateRef = useRef(false);
 
   const safeInit = (cb?: () => void) => {
     if (initRef.current) return;
@@ -1709,11 +1727,13 @@ function InteractiveTrainerSection() {
   };
 
   useEffect(() => {
+    const handler = () => safeInit();
     if (window.wasmReady) {
-      safeInit();
+      handler();
     } else {
-      window.addEventListener("wasmReady", () => safeInit());
+      window.addEventListener("wasmReady", handler);
     }
+    return () => window.removeEventListener("wasmReady", handler);
   }, []);
 
   useEffect(() => {
@@ -1729,6 +1749,7 @@ function InteractiveTrainerSection() {
   const handleReset = () => {
     setTraining(false);
     setStep(0);
+    stepRef.current = 0;
     setLoss(null);
     setLossHistory([]);
     setGenerated([]);
@@ -1753,48 +1774,76 @@ function InteractiveTrainerSection() {
 
   const startTraining = () => {
     setTraining(true);
+    stepRef.current = 0;
     setStep(0);
     setLossHistory([]);
   };
 
   useEffect(() => {
+    trainingRef.current = training;
+  }, [training]);
+
+  useEffect(() => {
+    showGenerateRef.current = showGenerate;
+  }, [showGenerate]);
+
+  useEffect(() => {
     if (!training || !wasmReady) return;
 
     let animationId: number;
-    let currentStep = step;
 
     const loop = () => {
-      const lossVal = window.goTrainStep();
-      currentStep++;
-      setStep(currentStep);
+      if (!trainingRef.current) return;
+
+      let lossVal: number;
+      try {
+        lossVal = window.goTrainStep();
+      } catch (e) {
+        console.error("goTrainStep failed:", e);
+        setInitStatus("error: train step crashed");
+        setTraining(false);
+        return;
+      }
+
+      stepRef.current++;
+      setStep(stepRef.current);
       setLoss(lossVal);
 
-      if (currentStep % 10 === 0) {
+      if (stepRef.current % 10 === 0) {
         setLossHistory((prev) => [
           ...prev,
-          { step: currentStep, loss: lossVal },
+          { step: stepRef.current, loss: lossVal },
         ]);
       }
 
-      if (currentStep % 1000 === 0) {
-        const name = window.goGenerate(0.5);
-        setGenerated((prev) => [...prev, { step: currentStep, name }]);
+      if (stepRef.current % 1000 === 0) {
+        try {
+          const name = window.goGenerate(0.5);
+          setGenerated((prev) => [...prev, { step: stepRef.current, name }]);
+        } catch (e) {
+          console.error("goGenerate failed:", e);
+        }
       }
 
-      if (currentStep >= 1000 && !showGenerate) {
+      if (stepRef.current >= 1000 && !showGenerateRef.current) {
         setShowGenerate(true);
       }
 
-      if (currentStep < 10000) {
+      if (stepRef.current < 10000) {
         animationId = requestAnimationFrame(loop);
       } else {
+        console.log("Training complete at 10000 steps");
         setTraining(false);
       }
     };
 
     animationId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animationId);
-  }, [training, wasmReady, step, showGenerate]);
+    console.log("Training loop started");
+    return () => {
+      console.log("Training loop stopped");
+      cancelAnimationFrame(animationId);
+    };
+  }, [training, wasmReady]);
 
   const handleGenerate = () => {
     if (!wasmReady || step < 1000) return;
@@ -1866,6 +1915,23 @@ function InteractiveTrainerSection() {
       {isMobile ? (
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12">
+            <div className="mb-4 font-mono text-xs uppercase tracking-[0.18em] training-stats">
+              <div
+                className={`inline-flex items-center gap-2 border px-3 py-2 ${mobileInitialized ? "border-[--ink] text-[--ink]" : "border-[--rule] text-[--muted-ink]"}`}
+              >
+                {mobileInitialized ? (
+                  <>
+                    <span
+                      className="inline-block h-3 w-3 rounded-full training-pulse-dot"
+                      style={{ backgroundColor: INK }}
+                    />
+                    model loaded — tap to sample
+                  </>
+                ) : (
+                  <>{initStatus}</>
+                )}
+              </div>
+            </div>
             <button
               onClick={handleMobileGenerate}
               disabled={!wasmReady || initStatus === "Initializing..."}
@@ -2051,6 +2117,7 @@ export default function App() {
     } else {
       window.addEventListener("wasmReady", loadWasmWeights);
     }
+    return () => window.removeEventListener("wasmReady", loadWasmWeights);
   }, []);
 
   return (
