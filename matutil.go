@@ -157,3 +157,15 @@ func gradRMSNorm(dout, x []float64) []float64 {
 	}
 	return dx
 }
+
+func addGradRMSNormGamma(dGamma, dOut, x []float64) {
+	ms := 0.0
+	for _, v := range x {
+		ms += v * v
+	}
+	ms /= float64(len(x))
+	invRms := 1.0 / math.Sqrt(ms+1e-5)
+	for i := range dGamma {
+		dGamma[i] += dOut[i] * x[i] * invRms
+	}
+}

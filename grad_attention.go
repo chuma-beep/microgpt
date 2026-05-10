@@ -69,29 +69,3 @@ func gradAttentionHead(dout, q []float64, ks, vs [][]float64, weights []float64,
 	}
 	return
 }
-
-// gradAttentionBlock processes all heads and returns gradients for weights and input.
-// Assumes nHead and headDim are package vars.
-func gradAttentionBlock(g *GPT, cache *Cache, pos int, dout []float64) (dx []float64, dWq, dWk, dWv, dWo []float64) {
-	// dout is gradient w.r.t. attention output (before wo projection)
-	// We need to backprop through wo, then through each head, then through QKV projections.
-
-	// 1) gradient through wo (output projection)
-	// Note: attnConcat is stored in cache for use in backward pass
-
-	// Because this is a large function, I'll provide a skeleton that you can complete later.
-	// The full implementation would:
-	// - grad through wo: using gradLinear on dout, wo, and stored attnConcat.
-	// - then split dattn into heads.
-	// - for each head, call gradAttentionHead with cached q,k,v,weights.
-	// - then combine dq, dk, dv and backprop through wq, wk, wv via gradLinear.
-	// - sum contributions to dx (input to attention block).
-
-	// Placeholder return
-	dx = make([]float64, nEmb)
-	dWq = make([]float64, nEmb*nEmb)
-	dWk = make([]float64, nEmb*nEmb)
-	dWv = make([]float64, nEmb*nEmb)
-	dWo = make([]float64, nEmb*nEmb)
-	return
-}

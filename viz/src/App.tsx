@@ -16,6 +16,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Katex } from "@/components/Katex";
+import { useInView } from "@/hooks/useInView";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const INK = "#1B2A4A";
 const PAPER = "#FAFAF7";
@@ -206,35 +208,12 @@ function Section({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const visible = useInView(ref, { threshold: 0.15 });
   const [animationStarted, setAnimationStarted] = useState(false);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) {
-      setVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
-          setVisible(true);
-          setAnimationStarted(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: [0.15] },
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+    if (visible) setAnimationStarted(true);
+  }, [visible]);
 
   return (
     <section
@@ -382,34 +361,8 @@ function HeatRow({
     ? Math.max(...values.map((v) => Math.abs(v))) || 1
     : Math.max(...values) || 1;
 
-  const [cellsAnimated, setCellsAnimated] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) {
-      setCellsAnimated(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setCellsAnimated(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.5 },
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const cellsAnimated = useInView(ref, { threshold: 0.5 });
 
   return (
     <div className="flex items-center gap-3 embedding-row" ref={ref}>
@@ -441,12 +394,8 @@ function HeatRow({
   );
 }
 
-// function EmbeddingPanel({ name }: { name: string }) {
-//   const sequence = useMemo(() => {
-//     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
-//     return ["."].concat(clean.split("")).concat(["."]);
-//   }, [name]);
-//
+
+
 //   const [focus, setFocus] = useState(0);
 //   const focusIdx = Math.min(focus, sequence.length - 1);
 //   const tokenIdx = charToIdx(sequence[focusIdx]);
@@ -642,13 +591,7 @@ function EmbeddingPanel({ name }: { name: string }) {
 }
 
 function AttentionPanel({ name }: { name: string }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const isMobile = useIsMobile(640);
 
   const tokens = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
@@ -681,29 +624,8 @@ function AttentionPanel({ name }: { name: string }) {
   } | null>(null);
   const cell = isMobile ? 18 : 24;
 
-  const [cellsVisible, setCellsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) {
-      setCellsVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setCellsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 },
-    );
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const cellsVisible = useInView(containerRef, { threshold: 0.3 });
 
   const renderHead = (matrix: number[][], headIdx: number) => {
     const n = matrix.length;
@@ -828,11 +750,12 @@ function AttentionPanel({ name }: { name: string }) {
 }
 
 function LossPanel() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const isMobile = useIsMobile(640);
   const [isTouch, setIsTouch] = useState(
     "ontouchstart" in window || navigator.maxTouchPoints > 0,
   );
-  const [visible, setVisible] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const visible = useInView(chartRef, { threshold: 0.15 });
   const [lineDrawn, setLineDrawn] = useState(false);
   const [axisVisible, setAxisVisible] = useState(false);
   const [crosshair, setCrosshair] = useState<{
@@ -841,47 +764,17 @@ function LossPanel() {
     step: number;
     loss: number;
   } | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) {
-      setVisible(true);
-      setLineDrawn(true);
-      setAxisVisible(true);
-      return;
+    if (visible) {
+      const timer1 = setTimeout(() => setLineDrawn(true), 100);
+      const timer2 = setTimeout(() => setAxisVisible(true), 1200);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          const timer1 = setTimeout(() => setLineDrawn(true), 100);
-          const timer2 = setTimeout(() => setAxisVisible(true), 1200);
-          observer.disconnect();
-          return () => {
-            clearTimeout(timer1);
-            clearTimeout(timer2);
-          };
-        }
-      },
-      { threshold: 0.15 },
-    );
-
-    if (chartRef.current) {
-      observer.observe(chartRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  }, [visible]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!chartRef.current || !lineDrawn) return;
@@ -1307,17 +1200,7 @@ function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect touch or narrow screens (tablets + phones)
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobile = useIsMobile(1024);
 
   // Animation logic (unchanged)
   useEffect(() => {
@@ -1704,7 +1587,7 @@ function InteractiveTrainerSection() {
     [],
   );
   const [showGenerate, setShowGenerate] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile(768);
   const [mobileInitialized, setMobileInitialized] = useState(false);
   const [mobileNames, setMobileNames] = useState<string[]>([]);
   const initRef = useRef(false);
@@ -1735,16 +1618,6 @@ function InteractiveTrainerSection() {
       window.addEventListener("wasmReady", handler);
     }
     return () => window.removeEventListener("wasmReady", handler);
-  }, []);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const handleReset = () => {
@@ -2072,33 +1945,7 @@ function AnimatedMarginRule() {
 
 function AnimatedSectionDivider() {
   const ref = useRef<HTMLDivElement>(null);
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (prefersReducedMotion) {
-      setAnimated(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setAnimated(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.5 },
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const animated = useInView(ref, { threshold: 0.5 });
 
   return (
     <div

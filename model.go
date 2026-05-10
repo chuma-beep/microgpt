@@ -236,27 +236,20 @@ func (g *GPT) Backward(cache *Cache) {
 		}
 
 		lmHead := g.stateDict["lm_head"]
-		dlmHeadWeight := outerProdVecMat(dlogits, cache.FinalX[pos])
+		dlmHeadWeight, _, _ := outer(dlogits, cache.FinalX[pos])
 		addGrad(g.gradMap["lm_head"], dlmHeadWeight)
-		dxAfterResidual := matVecMulT(lmHead.data, dlogits, lmHead.rows, lmHead.cols)
+		dxAfterResidual := matVecMulTranspose(lmHead.data, dlogits, lmHead.rows, lmHead.cols)
 
 		dx := dxAfterResidual
 
 		fc2 := g.stateDict["layer0.mlp_fc2"]
-		dfc2Weight := outerProdVecMat(dx, cache.MLPReLU[pos])
-		dfc2Input := matVecMulT(fc2.data, dx, fc2.rows, fc2.cols)
+		dfc2Weight, dfc2Input := gradLinear(dx, fc2.data, cache.MLPReLU[pos], fc2.rows, fc2.cols)
 		addGrad(g.gradMap["layer0.mlp_fc2"], dfc2Weight)
 
-		drelu := make([]float64, len(dfc2Input))
-		for i, v := range dfc2Input {
-			if cache.MLPReLU[pos][i] > 0 {
-				drelu[i] = v
-			}
-		}
+		drelu := gradRelu(dfc2Input, cache.MLPReLU[pos])
 
 		fc1 := g.stateDict["layer0.mlp_fc1"]
-		dfc1Weight := outerProdVecMat(drelu, cache.MLPIn[pos])
-		dfc1Input := matVecMulT(fc1.data, drelu, fc1.rows, fc1.cols)
+		dfc1Weight, dfc1Input := gradLinear(drelu, fc1.data, cache.MLPIn[pos], fc1.rows, fc1.cols)
 		addGrad(g.gradMap["layer0.mlp_fc1"], dfc1Weight)
 
 		dXNorm := dfc1Input
@@ -269,22 +262,12 @@ func (g *GPT) Backward(cache *Cache) {
 		}
 
 		xBeforeMlpNorm := cache.XResMlp[pos]
-		dXAfterMlpNorm := rmsnormBackward(elemMul(dXResMlp, g.stateDict["layer0.rms2_gamma"].data), xBeforeMlpNorm)
-		// Gamma2 gradient: dgamma = dout * x_normalized
-		ms := 0.0
-		for _, v := range xBeforeMlpNorm {
-			ms += v * v
-		}
-		ms /= float64(nEmb)
-		invRms := 1.0 / math.Sqrt(ms+1e-5)
-		for i := range dGamma2 {
-			dGamma2[i] += dXResMlp[i] * xBeforeMlpNorm[i] * invRms
-		}
+		dXAfterMlpNorm := gradRMSNorm(elemMul(dXResMlp, g.stateDict["layer0.rms2_gamma"].data), xBeforeMlpNorm)
+		addGradRMSNormGamma(dGamma2, dXResMlp, xBeforeMlpNorm)
 
 		attnOut := cache.AttnConcat[pos]
 		wo := g.stateDict["layer0.attn_wo"]
-		dAttnOut := matVecMulT(wo.data, dXAfterMlpNorm, wo.rows, wo.cols)
-		dwoWeight := outerProdVecMat(dXAfterMlpNorm, attnOut)
+		dwoWeight, dAttnOut := gradLinear(dXAfterMlpNorm, wo.data, attnOut, wo.rows, wo.cols)
 		addGrad(g.gradMap["layer0.attn_wo"], dwoWeight)
 
 		// Per-position incremental dk/dv for this attention computation
@@ -333,40 +316,31 @@ func (g *GPT) Backward(cache *Cache) {
 
 		// WQ gradient
 		xNorm := cache.X[pos]
-		dwqWeight := outerProdVecMat(dqFull, xNorm)
+		dwqWeight, _, _ := outer(dqFull, xNorm)
 		addGrad(g.gradMap["layer0.attn_wq"], dwqWeight)
 
 		// WK/WV gradients from accumulated per-position dk/dv
-		dwkWeight := outerProdVecMat(dkAccum[pos], xNorm)
-		dwvWeight := outerProdVecMat(dvAccum[pos], xNorm)
+		dwkWeight, _, _ := outer(dkAccum[pos], xNorm)
+		dwvWeight, _, _ := outer(dvAccum[pos], xNorm)
 		addGrad(g.gradMap["layer0.attn_wk"], dwkWeight)
 		addGrad(g.gradMap["layer0.attn_wv"], dwvWeight)
 
 		// Accumulate dx contributions at each past position from this attention
 		for t := 0; t <= pos; t++ {
-			dxKt := matVecMulT(wk.data, dkPerPos[t], wk.rows, wk.cols)
-			dxVt := matVecMulT(wv.data, dvPerPos[t], wv.rows, wv.cols)
+			dxKt := matVecMulTranspose(wk.data, dkPerPos[t], wk.rows, wk.cols)
+			dxVt := matVecMulTranspose(wv.data, dvPerPos[t], wv.rows, wv.cols)
 			for i := range dxFromAttn[t] {
 				dxFromAttn[t][i] += dxKt[i] + dxVt[i]
 			}
 		}
-		dxQ := matVecMulT(wq.data, dqFull, wq.rows, wq.cols)
+		dxQ := matVecMulTranspose(wq.data, dqFull, wq.rows, wq.cols)
 		for i := range dxFromAttn[pos] {
 			dxFromAttn[pos][i] += dxQ[i]
 		}
 
 		// Residual path through rmsnorm
-		dXAfterAttnNorm := rmsnormBackward(elemMul(dXAfterMlpNorm, g.stateDict["layer0.rms1_gamma"].data), cache.X[pos])
-		// Gamma1 gradient
-		ms1 := 0.0
-		for _, v := range cache.X[pos] {
-			ms1 += v * v
-		}
-		ms1 /= float64(nEmb)
-		invRms1 := 1.0 / math.Sqrt(ms1+1e-5)
-		for i := range dGamma1 {
-			dGamma1[i] += dXAfterMlpNorm[i] * cache.X[pos][i] * invRms1
-		}
+		dXAfterAttnNorm := gradRMSNorm(elemMul(dXAfterMlpNorm, g.stateDict["layer0.rms1_gamma"].data), cache.X[pos])
+		addGradRMSNormGamma(dGamma1, dXAfterMlpNorm, cache.X[pos])
 		dXResidual := make([]float64, nEmb)
 		for i := range dXResidual {
 			dXResidual[i] = dXAfterAttnNorm[i] + dxFromAttn[pos][i]
@@ -375,17 +349,8 @@ func (g *GPT) Backward(cache *Cache) {
 		dxNorm := dXResidual
 		dXResidualForGamma := make([]float64, nEmb)
 		copy(dXResidualForGamma, dxNorm)
-		dxNorm = rmsnormBackward(elemMul(dxNorm, g.stateDict["layer0.rms1_gamma"].data), cache.XRes[pos])
-		// Gamma1 gradient
-		ms2 := 0.0
-		for _, v := range cache.XRes[pos] {
-			ms2 += v * v
-		}
-		ms2 /= float64(nEmb)
-		invRms2 := 1.0 / math.Sqrt(ms2+1e-5)
-		for i := range dGamma1 {
-			dGamma1[i] += dXResidualForGamma[i] * cache.XRes[pos][i] * invRms2
-		}
+		dxNorm = gradRMSNorm(elemMul(dxNorm, g.stateDict["layer0.rms1_gamma"].data), cache.XRes[pos])
+		addGradRMSNormGamma(dGamma1, dXResidualForGamma, cache.XRes[pos])
 
 		tokenID := cache.Tokens[pos]
 		wteGrad := g.gradMap["wte"]
@@ -406,54 +371,6 @@ func addGrad(m *matrix, grad []float64) {
 	for i := range grad {
 		m.data[i] += grad[i]
 	}
-}
-
-func outerProdVecMat(a, b []float64) []float64 {
-	result := make([]float64, len(a)*len(b))
-	rows := len(a)
-	cols := len(b)
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			result[i*cols+j] = a[i] * b[j]
-		}
-	}
-	return result
-}
-
-func matVecMulT(mat []float64, vec []float64, rows, cols int) []float64 {
-	result := make([]float64, cols)
-	for i := 0; i < rows; i++ {
-		for j := 0; j < cols; j++ {
-			result[j] += mat[i*cols+j] * vec[i]
-		}
-	}
-	return result
-}
-
-func rmsnormBackward(dy, x []float64) []float64 {
-	dx := make([]float64, len(x))
-	mean := 0.0
-	for _, v := range x {
-		mean += v * v
-	}
-	mean /= float64(len(x))
-	mean = math.Sqrt(mean + 1e-8)
-	invMean := 1.0 / mean
-
-	for i := range dx {
-		dx[i] = invMean * dy[i]
-		dx[i] -= invMean * dy[i] * x[i] * x[i] / (float64(len(x)) * mean * mean)
-	}
-
-	sum := 0.0
-	for i := range dy {
-		sum += x[i] * dy[i] * invMean
-	}
-	for i := range dx {
-		dx[i] -= x[i] * sum / (float64(len(x)) * mean * mean)
-	}
-
-	return dx
 }
 
 func addEmbedGrad(m *matrix, row int, grad []float64) {
