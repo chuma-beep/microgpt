@@ -11,29 +11,31 @@ $ go run . -steps 10000 -temperature 0.5
 Loaded 32033 names
 Vocab size: 27
 Train: 28829, Val: 3204
-step 100/10000, avg loss = 3.2352
-step 200/10000, avg loss = 3.0156
-step 300/10000, avg loss = 2.8304
-step 400/10000, avg loss = 2.7772
-step 500/10000, avg loss = 2.7604, val loss = 2.9741
-...
-step 900/10000, avg loss = 2.6146
-step 1000/10000, avg loss = 2.6686, val loss = 2.8969
+step 100/10000, avg loss = 3.0746
+step 200/10000, avg loss = 2.5897
+step 300/10000, avg loss = 2.3875
+step 400/10000, avg loss = 2.3830
+step 500/10000, avg loss = 2.3157, val loss = 2.7141
+step 600/10000, avg loss = 2.3079
+step 700/10000, avg loss = 2.1988
+step 800/10000, avg loss = 2.1950
+step 900/10000, avg loss = 2.2337
+step 1000/10000, avg loss = 2.3025, val loss = 2.6430
 
 --- Generated names (temperature 0.5) ---
- 1: mena
- 2: marian
- 3: carien
- 4: annie
- 5: anayne
- 6: meelyn
- 7: ajurle
- 8: aliee
- 9: rera
-10: ancdy
+ 1: derinne
+ 2: ennna
+ 3: elynna
+ 4: daylee
+ 5: erita
+ 6: gelen
+ 7: elos
+ 8: alynn
+ 9: anna
+10: danaya
 ```
 
-Train loss drops from ~3.27 (random chance) to ~2.67 over 1000 steps, with validation loss tracked every 500 steps. The gap between train and val (~0.2) indicates mild overfitting — the model generalizes but could benefit from more data or regularization.
+Train loss drops from ~3.27 (random chance) to ~2.30 over 1000 steps, with validation loss tracked every 500 steps. The gap between train and val (~0.3) indicates mild overfitting — the model generalizes but could benefit from more data or regularization.
 
 ## Usage
 
