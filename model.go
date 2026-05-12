@@ -253,17 +253,13 @@ func (g *GPT) Backward(cache *Cache) {
 		addGrad(g.gradMap["layer0.mlp_fc1"], dfc1Weight)
 
 		dXNorm := dfc1Input
-		dXResMlp := make([]float64, nEmb)
-		for i := range dXResMlp {
-			dXResMlp[i] = dXNorm[i]
-		}
-		for i := range dXResMlp {
-			dXResMlp[i] += dx[i]
-		}
 
 		xBeforeMlpNorm := cache.XResMlp[pos]
-		dXAfterMlpNorm := gradRMSNorm(elemMul(dXResMlp, g.stateDict["layer0.rms2_gamma"].data), xBeforeMlpNorm)
-		addGradRMSNormGamma(dGamma2, dXResMlp, xBeforeMlpNorm)
+		dXAfterMlpNorm := gradRMSNorm(elemMul(dXNorm, g.stateDict["layer0.rms2_gamma"].data), xBeforeMlpNorm)
+		addGradRMSNormGamma(dGamma2, dXNorm, xBeforeMlpNorm)
+		for i := range dXAfterMlpNorm {
+			dXAfterMlpNorm[i] += dx[i]
+		}
 
 		attnOut := cache.AttnConcat[pos]
 		wo := g.stateDict["layer0.attn_wo"]
@@ -339,11 +335,11 @@ func (g *GPT) Backward(cache *Cache) {
 		}
 
 		// Residual path through rmsnorm
-		dXAfterAttnNorm := gradRMSNorm(elemMul(dXAfterMlpNorm, g.stateDict["layer0.rms1_gamma"].data), cache.X[pos])
-		addGradRMSNormGamma(dGamma1, dXAfterMlpNorm, cache.X[pos])
+		dXAfterAttnNorm := gradRMSNorm(elemMul(dxFromAttn[pos], g.stateDict["layer0.rms1_gamma"].data), cache.X[pos])
+		addGradRMSNormGamma(dGamma1, dxFromAttn[pos], cache.X[pos])
 		dXResidual := make([]float64, nEmb)
 		for i := range dXResidual {
-			dXResidual[i] = dXAfterAttnNorm[i] + dxFromAttn[pos][i]
+			dXResidual[i] = dXAfterAttnNorm[i] + dXAfterMlpNorm[i]
 		}
 
 		dxNorm := dXResidual
