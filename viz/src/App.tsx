@@ -996,15 +996,19 @@ function GeneratedRow({
     setCount(0);
     setShowStep(false);
     let i = 0;
+    let showTimer: number | undefined;
     const id = window.setInterval(() => {
       i += 1;
       setCount(i);
       if (i >= name.length) {
         window.clearInterval(id);
-        setTimeout(() => setShowStep(true), 200);
+        showTimer = window.setTimeout(() => setShowStep(true), 200);
       }
     }, 55);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      if (showTimer !== undefined) window.clearTimeout(showTimer);
+    };
   }, [isLatest, name]);
 
   return (
@@ -1083,7 +1087,9 @@ function GenerationPanel() {
     if (window.wasmReady) {
       setWasmReady(true);
     } else {
-      window.addEventListener("wasmReady", () => setWasmReady(true));
+      const handler = () => setWasmReady(true);
+      window.addEventListener("wasmReady", handler);
+      return () => window.removeEventListener("wasmReady", handler);
     }
   }, []);
 
@@ -1212,18 +1218,20 @@ function ArchitecturePanel() {
       setVisibleArrows(BLOCKS.map((_, i) => true));
       return;
     }
+    const timers: number[] = [];
     BLOCKS.forEach((_, i) => {
-      setTimeout(() => {
+      const id = window.setTimeout(() => {
         setVisibleBlocks((prev) => {
           const next = [...prev];
           next[i] = true;
           return next;
         });
       }, i * 80);
+      timers.push(id);
     });
     BLOCKS.forEach((_, i) => {
       if (i < BLOCKS.length - 1) {
-        setTimeout(
+        const id = window.setTimeout(
           () => {
             setVisibleArrows((prev) => {
               const next = [...prev];
@@ -1233,8 +1241,10 @@ function ArchitecturePanel() {
           },
           i * 80 + 300,
         );
+        timers.push(id);
       }
     });
+    return () => timers.forEach((id) => window.clearTimeout(id));
   }, []);
 
   const handleBlockClick = (index: number) => {
@@ -1872,11 +1882,14 @@ function AnimatedTitle({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const timers: number[] = [];
     letters.forEach((_, i) => {
-      setTimeout(() => {
+      const id = window.setTimeout(() => {
         setAnimatedCount((prev) => prev + 1);
       }, i * 40);
+      timers.push(id);
     });
+    return () => timers.forEach((id) => window.clearTimeout(id));
   }, [letters.length]);
 
   return (
