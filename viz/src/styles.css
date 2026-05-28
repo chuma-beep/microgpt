@@ -327,7 +327,7 @@
   width: 0;
   background-color: var(--ink);
   transition: width 200ms ease-in-out;
-  z-index: 0;
+  z-index: -1;
 }
 
 .btn-ink:not(input):hover:not(:disabled)::before {
@@ -335,7 +335,7 @@
 }
 
 .btn-ink:not(input):hover:not(:disabled) {
-  color: var(--paper);
+  color: var(--paper) !important;
 }
 
 .btn-ink:active:not(:disabled) {
