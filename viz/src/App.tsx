@@ -1926,7 +1926,7 @@ export default function App() {
         <Section
           number="1"
           title="Tokenization"
-          caption="Each character of the input name is mapped to an integer index in a 27-symbol vocabulary (a–z plus a single boundary marker `·` used as both BOS and EOS). The one-hot column on the right is the canonical representation passed to the embedding layer."
+          caption="Each character of the input name is mapped to an integer index in a 27-symbol vocabulary (a–z plus a single boundary marker `·` used as both BOS and EOS). The one-hot column is the canonical representation passed to the embedding layer."
         >
           <TokenizerPanel name={name} setName={setName} />
         </Section>
