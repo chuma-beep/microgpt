@@ -1074,7 +1074,7 @@ function GenerationPanel() {
                 colSpan={3}
                 className="px-2 py-6 text-center text-[--muted-ink]"
               >
-                — no samples drawn —
+                - no samples drawn -
               </td>
             </tr>
           )}
@@ -1085,17 +1085,17 @@ function GenerationPanel() {
 }
 
 const BLOCKS = [
-  { name: "Input Tokens", params: "—" },
+  { name: "Input Tokens", params: "-" },
   { name: "Token Embedding (27 × 16)", params: "432 p" },
   { name: "Positional Embedding (16 × 16)", params: "256 p" },
   { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "4-Head Attention", params: "1,024 p" },
-  { name: "Residual ⊕", params: "—" },
+  { name: "Residual ⊕", params: "-" },
   { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "MLP (16→64→16)", params: "2,048 p" },
-  { name: "Residual ⊕", params: "—" },
+  { name: "Residual ⊕", params: "-" },
   { name: "LM Head (16 × 27)", params: "432 p" },
-  { name: "Softmax", params: "—" },
+  { name: "Softmax", params: "-" },
   { name: "Output Distribution (27 dims)", params: "27 dims" },
 ];
 
@@ -1108,10 +1108,10 @@ const TOOLTIPS: Record<number, string> = {
   5: "A shortcut connection that adds the original input directly to the output of a layer. This prevents information from being lost as it travels deeper through the network.",
   6: "A second RMSNorm layer before the MLP block. Same operation, separate learnable scale parameters.",
   7: "A small feedforward network that processes each position independently. Expands from 16→64, applies ReLU, then compresses back to 16. 2,048 learnable values.",
-  8: "Another shortcut connection around the MLP block — preserves information and makes gradients flow more easily.",
-  9: "The final projection that converts the 16-dimensional vector into 27 scores — one for each possible next character.",
+  8: "Another shortcut connection around the MLP block - preserves information and makes gradients flow more easily.",
+  9: "The final projection that converts the 16-dimensional vector into 27 scores - one for each possible next character.",
   10: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character.",
-  11: "The final result — a probability for each of the 27 tokens. The model samples one token, appends it, and repeats until the boundary marker.",
+  11: "The final result - a probability for each of the 27 tokens. The model samples one token, appends it, and repeats until the boundary marker.",
 };
 
 function ArchitecturePanel() {
@@ -1292,7 +1292,7 @@ function ArchitecturePanel() {
 
       {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Total 4,224 parameters — token embeddings 432, positional 256, RMSNorm 2×16,
+        Total 4,224 parameters - token embeddings 432, positional 256, RMSNorm 2×16,
         4-head attention 1,024, MLP 2,048, LM head 432. The smallest
         configuration that still learns plausible English-looking name
         morphology.
@@ -1414,8 +1414,8 @@ function InteractiveTrainerDesktop(props: {
                   className="inline-block h-3 w-3 rounded-full training-pulse-dot"
                   style={{ backgroundColor: INK }}
                 />
-                training live — step {step} / 10000 · loss{" "}
-                {loss !== null ? loss.toFixed(4) : "—"}
+                training live - step {step} / 10000 · loss{" "}
+                {loss !== null ? loss.toFixed(4) : "-"}
               </>
             ) : (
               <>{initStatus}</>
@@ -1482,7 +1482,7 @@ function InteractiveTrainerDesktop(props: {
         </div>
         <div className="font-mono text-sm">
           {generated.length === 0 && (
-            <div className="text-[--muted-ink]">— no samples yet —</div>
+            <div className="text-[--muted-ink]">- no samples yet -</div>
           )}
           {generated.map((g, i) => (
             <div key={i} className="border-b border-[--rule] py-1">
@@ -1669,7 +1669,7 @@ function InteractiveTrainerSection() {
         </div>
         <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
           Train the model in your browser. The Go/WASM implementation runs
-          entirely client-side — every forward pass, backward pass, and
+          entirely client-side - every forward pass, backward pass, and
           parameter update happens in real time.
         </p>
       </header>
@@ -1721,7 +1721,7 @@ function InteractiveTrainerSection() {
                       className="inline-block h-3 w-3 rounded-full training-pulse-dot"
                       style={{ backgroundColor: INK }}
                     />
-                    model loaded — tap to sample
+                    model loaded - tap to sample
                   </>
                 ) : (
                   <>{initStatus}</>
@@ -1744,7 +1744,7 @@ function InteractiveTrainerSection() {
           </div>
           <div className="col-span-12 mt-6 font-mono text-sm">
             {mobileNames.length === 0 && (
-              <div className="text-[--muted-ink]">— no names yet —</div>
+              <div className="text-[--muted-ink]">- no names yet -</div>
             )}
             {mobileNames.map((name, i) => (
               <div key={i} className="border-b border-[--rule] py-1">
@@ -1911,7 +1911,7 @@ export default function App() {
             </span>
           </h1>
           <p className="mt-8 max-w-2xl font-serif text-[15px] leading-[1.75] text-[--ink]">
-            We trace a single forward pass — character to distribution — through
+            We trace a single forward pass - character to distribution - through
             every component of a minimal decoder-only transformer. Each figure
             below corresponds to one stage of the computation. Hover, type, and
             sample to inspect the model's internal state.
