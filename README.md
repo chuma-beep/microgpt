@@ -23,16 +23,26 @@ step 900/10000, avg loss = 2.2337
 step 1000/10000, avg loss = 2.3025, val loss = 2.6430
 
 --- Generated names (temperature 0.5) ---
- 1: derinne
- 2: ennna
- 3: elynna
- 4: daylee
- 5: erita
- 6: gelen
- 7: elos
- 8: alynn
- 9: anna
-10: danaya
+  1: derinne
+  2: ennna
+  3: elynna
+  4: daylee
+  5: erita
+  6: gelen
+  7: elos
+  8: alynn
+  9: anna
+ 10: danaya
+ 11: mare
+ 12: kylie
+ 13: rita
+ 14: lilia
+ 15: nora
+ 16: sienna
+ 17: ari
+ 18: leona
+ 19: alina
+ 20: miri
 ```
 
 Train loss drops from ~3.27 (random chance) to ~2.30 over 1000 steps, with validation loss tracked every 500 steps. The gap between train and val (~0.3) indicates mild overfitting — the model generalizes but could benefit from more data or regularization.
@@ -43,10 +53,10 @@ Train loss drops from ~3.27 (random chance) to ~2.30 over 1000 steps, with valid
 go run . -steps 10000 -temperature 0.5
 ```
 
-On subsequent runs, saved weights are loaded automatically — no retraining needed:
+On subsequent runs, saved weights are loaded automatically — pass `-generate` to skip retraining:
 
 ```bash
-go run .
+go run . -generate
 # Loading weights from weights.bin
 # --- Generated names (temperature 0.5) ---
 ```
@@ -131,7 +141,7 @@ microgpt/
 ├── *_test.go          # unit and gradient-check tests
 ├── go.mod
 ├── go.sum
-├── agent.md
+├── .gitignore
 └── weights.bin
 ```
 

@@ -1911,7 +1911,7 @@ export default function App() {
             </span>
           </h1>
           <p className="mt-8 max-w-2xl font-serif text-[15px] leading-[1.75] text-[--ink]">
-            We trace a single forward pass - character to distribution - through
+            Here we trace a single forward pass - character to distribution - through
             every component of a minimal decoder-only transformer. Each figure
             below corresponds to one stage of the computation. Hover, type, and
             sample to inspect the model's internal state.
@@ -1992,7 +1992,7 @@ export default function App() {
         <InteractiveTrainerSection />
 
         <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-          end of appendix · figures rendered live · no backend
+          end of appendix · figures rendered live
         </footer>
       </div>
     </main>
