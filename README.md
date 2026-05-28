@@ -1,6 +1,6 @@
 <div align="center">
 
-<br>
+
 
                             
     
@@ -15,7 +15,7 @@
 **A minimal GPT implementation written from scratch in Go.**  
 No external ML libraries. Every matrix multiply, backprop step, and optimizer update is done by hand.
 
-<br>
+
 
 ![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-6e7681?style=flat-square)
