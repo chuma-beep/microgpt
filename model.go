@@ -103,6 +103,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 	cache := &Cache{
 		Positions:   n,
 		Logits:      make([][]float64, n),
+		Probs:       make([][]float64, n),
 		Targets:     make([]int, n),
 		Tokens:      make([]int, n),
 		X:           make([][]float64, n),
@@ -110,10 +111,13 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		Q:           make([][]float64, n),
 		K:           make([][]float64, n),
 		V:           make([][]float64, n),
+		AttnScores:  make([][]float64, n),
 		AttnWeights: make([][]float64, n),
 		AttnConcat:  make([][]float64, n),
+		AttnProj:    make([][]float64, n),
 		XResMlp:     make([][]float64, n),
 		MLPIn:       make([][]float64, n),
+		MLPPreReLU:  make([][]float64, n),
 		MLPReLU:     make([][]float64, n),
 		MLPOut:      make([][]float64, n),
 		FinalX:      make([][]float64, n),
@@ -157,6 +161,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 
 		attnOut := make([]float64, nEmb)
 		allWeights := make([]float64, 0, nHead*len(keysCache[0]))
+		allScores := make([]float64, 0, nHead*len(keysCache[0]))
 		for h := 0; h < nHead; h++ {
 			hs := h * headDim
 			he := hs + headDim
@@ -167,17 +172,20 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 				kHeads[t] = keysCache[0][t][hs:he]
 				vHeads[t] = valuesCache[0][t][hs:he]
 			}
-			headOut, wts := attentionHead(qHead, kHeads, vHeads, headDim)
+			headOut, wts, scores := attentionHead(qHead, kHeads, vHeads, headDim)
 			for j := 0; j < headDim; j++ {
 				attnOut[hs+j] = headOut[j]
 			}
 			allWeights = append(allWeights, wts...)
+			allScores = append(allScores, scores...)
 		}
+		cache.AttnScores[pos] = allScores
 		cache.AttnWeights[pos] = allWeights
 		cache.AttnConcat[pos] = append([]float64(nil), attnOut...)
 
 		wo := g.stateDict["layer0.attn_wo"]
 		attnProj := matVecMul(wo.data, attnOut, wo.rows, wo.cols)
+		cache.AttnProj[pos] = append([]float64(nil), attnProj...)
 		x = vecAdd(attnProj, xResAttn)
 
 		// MLP block
@@ -187,6 +195,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		fc1 := g.stateDict["layer0.mlp_fc1"]
 		fc2 := g.stateDict["layer0.mlp_fc2"]
 		x = matVecMul(fc1.data, x, fc1.rows, fc1.cols)
+		cache.MLPPreReLU[pos] = append([]float64(nil), x...)
 		x = relu(x)
 		cache.MLPReLU[pos] = append([]float64(nil), x...)
 		x = matVecMul(fc2.data, x, fc2.rows, fc2.cols)
@@ -199,6 +208,7 @@ func (g *GPT) ForwardSeq(tokens []int) (float64, *Cache) {
 		cache.Targets[pos] = targetID
 		cache.Tokens[pos] = tokenID
 		probs := softmax(logits)
+		cache.Probs[pos] = probs
 		totalLoss += -math.Log(probs[targetID])
 	}
 	return totalLoss / float64(n), cache

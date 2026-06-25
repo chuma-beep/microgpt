@@ -3,17 +3,17 @@ package main
 
 import "math"
 
-func attentionHead(q []float64, ks, vs [][]float64, headDim int) (out []float64, weights []float64) {
+func attentionHead(q []float64, ks, vs [][]float64, headDim int) (out []float64, weights []float64, scores []float64) {
 	T := len(ks)
-	logits := make([]float64, T)
+	scores = make([]float64, T)
 	for t := 0; t < T; t++ {
 		dot := 0.0
 		for d := 0; d < headDim; d++ {
 			dot += q[d] * ks[t][d]
 		}
-		logits[t] = dot / math.Sqrt(float64(headDim))
+		scores[t] = dot / math.Sqrt(float64(headDim))
 	}
-	weights = softmax(logits)
+	weights = softmax(scores)
 	out = make([]float64, headDim)
 	for d := 0; d < headDim; d++ {
 		sum := 0.0

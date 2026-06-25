@@ -23,7 +23,7 @@ func TestAttentionHeadForward(t *testing.T) {
 		{0, 0, 1, 0},
 	}
 
-	out, weights := attentionHead(q, ks, vs, headDim)
+	out, weights, _ := attentionHead(q, ks, vs, headDim)
 
 	// Check output shape
 	if len(out) != headDim {
@@ -67,7 +67,7 @@ func TestAttentionHeadGradient(t *testing.T) {
 	}
 
 	// Forward pass
-	_, weights := attentionHead(q, ks, vs, headDim)
+	_, weights, _ := attentionHead(q, ks, vs, headDim)
 
 	// Loss = sum of output
 	dout := make([]float64, headDim)
@@ -84,11 +84,11 @@ func TestAttentionHeadGradient(t *testing.T) {
 	for d := 0; d < headDim; d++ {
 		save := q[d]
 		q[d] = save + eps
-		outPlus, _ := attentionHead(q, ks, vs, headDim)
+		outPlus, _, _ := attentionHead(q, ks, vs, headDim)
 		lossPlus := sum(outPlus)
 
 		q[d] = save - eps
-		outMinus, _ := attentionHead(q, ks, vs, headDim)
+		outMinus, _, _ := attentionHead(q, ks, vs, headDim)
 		lossMinus := sum(outMinus)
 
 		q[d] = save
@@ -106,11 +106,11 @@ func TestAttentionHeadGradient(t *testing.T) {
 			// Check dk
 			save := ks[i][d]
 			ks[i][d] = save + eps
-			outPlus, _ := attentionHead(q, ks, vs, headDim)
+			outPlus, _, _ := attentionHead(q, ks, vs, headDim)
 			lossPlus := sum(outPlus)
 
 			ks[i][d] = save - eps
-			outMinus, _ := attentionHead(q, ks, vs, headDim)
+			outMinus, _, _ := attentionHead(q, ks, vs, headDim)
 			lossMinus := sum(outMinus)
 
 			ks[i][d] = save
@@ -124,11 +124,11 @@ func TestAttentionHeadGradient(t *testing.T) {
 			// Check dv
 			save = vs[i][d]
 			vs[i][d] = save + eps
-			outPlus, _ = attentionHead(q, ks, vs, headDim)
+			outPlus, _, _ = attentionHead(q, ks, vs, headDim)
 			lossPlus = sum(outPlus)
 
 			vs[i][d] = save - eps
-			outMinus, _ = attentionHead(q, ks, vs, headDim)
+			outMinus, _, _ = attentionHead(q, ks, vs, headDim)
 			lossMinus = sum(outMinus)
 
 			vs[i][d] = save

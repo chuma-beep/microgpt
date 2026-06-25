@@ -1057,19 +1057,22 @@ input:hover,
 }
 
 /* ========================================
-   TABLET GRID ADJUSTMENTS
+   TABLET TEXT & SPACING ADJUSTMENTS
    ======================================== */
 @media (min-width: 640px) and (max-width: 1023px) {
-  .md\:col-span-3 {
-    grid-column: span 4 !important;
+  .figure-title {
+    font-size: 1.25rem !important;
   }
 
-  .md\:col-span-7 {
-    grid-column: span 8 !important;
+  body,
+  p,
+  .font-serif {
+    line-height: 1.75 !important;
   }
 
-  .md\:col-start-5 {
-    grid-column-start: 1 !important;
+  .py-20 {
+    padding-top: 48px !important;
+    padding-bottom: 48px !important;
   }
 
   .px-8 {

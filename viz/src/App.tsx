@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LineChart,
   Line,
@@ -16,6 +16,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Katex } from "@/components/Katex";
+import StepThrough from "@/components/StepThrough";
+import LogitLens from "@/components/LogitLens";
 import { useInView } from "@/hooks/useInView";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -136,63 +138,112 @@ const LOSS_DATA = [
 ];
 
 const GENERATIONS: { name: string; probs: number[] }[] = [
-  { name: "mena", probs: [] },
-  { name: "marian", probs: [] },
-  { name: "carien", probs: [] },
-  { name: "annie", probs: [] },
-  { name: "anayne", probs: [] },
-  { name: "meelyn", probs: [] },
-  { name: "ajurle", probs: [] },
-  { name: "aliee", probs: [] },
-  { name: "rera", probs: [] },
-  { name: "ancdy", probs: [] },
+  { name: "mena", probs: [0.41, 0.62, 0.55, 0.48] },
+  { name: "marian", probs: [0.39, 0.58, 0.46, 0.61, 0.52, 0.44] },
+  { name: "carien", probs: [0.27, 0.51, 0.49, 0.42, 0.55, 0.4] },
+  { name: "annie", probs: [0.44, 0.71, 0.63, 0.58, 0.49] },
+  { name: "anayne", probs: [0.42, 0.66, 0.4, 0.45, 0.52, 0.38] },
+  { name: "meelyn", probs: [0.4, 0.61, 0.59, 0.36, 0.47, 0.41] },
+  { name: "ajurle", probs: [0.3, 0.22, 0.31, 0.4, 0.44, 0.37] },
+  { name: "aliee", probs: [0.45, 0.57, 0.6, 0.53, 0.48] },
+  { name: "rera", probs: [0.33, 0.49, 0.43, 0.51] },
+  { name: "ancdy", probs: [0.41, 0.55, 0.28, 0.34, 0.39] },
 ];
 
-function FlipNumber({
-  value,
-  decimals = 4,
-}: {
-  value: number;
-  decimals?: number;
-}) {
-  const [displayValue, setDisplayValue] = useState(value);
-  const [isFlipping, setIsFlipping] = useState(false);
-  const prevValue = useRef(value);
+function GenerationPanel() {
+  const [shown, setShown] = useState(1);
+  const [wasmReady, setWasmReady] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+  const [generations, setGenerations] = useState(GENERATIONS);
 
   useEffect(() => {
-    if (prevValue.current !== value) {
-      setIsFlipping(true);
-      const timer = setTimeout(() => {
-        setDisplayValue(value);
-        setIsFlipping(false);
-        prevValue.current = value;
-      }, 75);
-      return () => clearTimeout(timer);
+    if (window.wasmReady) {
+      setWasmReady(true);
+    } else {
+      const handler = () => setWasmReady(true);
+      window.addEventListener("wasmReady", handler);
+      return () => window.removeEventListener("wasmReady", handler);
     }
-  }, [value]);
+  }, []);
 
-  const getLossColorClass = () => {
-    if (value < 2.5) return "loss-low";
-    if (value > 3.0) return "loss-high";
-    return "";
+  useEffect(() => {
+    if (window.modelReady) {
+      setModelReady(true);
+    } else {
+      const handler = () => setModelReady(true);
+      window.addEventListener("modelReady", handler);
+      return () => window.removeEventListener("modelReady", handler);
+    }
+  }, []);
+
+  const handleGenerate = () => {
+    const r = window.goGenerateWithProbs(0.5);
+    setGenerations((prev) => [...prev, r]);
+    setShown((s) => s + 1);
   };
 
-  const formattedValue = value.toFixed(decimals);
-
-  if (isFlipping) {
-    return (
-      <span className="flip-counter">
-        <span className="flip-counter-old">
-          {prevValue.current.toFixed(decimals)}
-        </span>
-      </span>
-    );
-  }
-
   return (
-    <span className={`flip-counter ${getLossColorClass()}`}>
-      <span className="flip-counter-new">{formattedValue}</span>
-    </span>
+    <div className="col-span-12">
+      <div className="mb-6 flex items-center gap-4 generation-controls">
+        <button
+          onClick={handleGenerate}
+          disabled={!modelReady}
+          className="btn-ink btn-ink-primary border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
+        >
+          <span className="btn-content">
+            {modelReady ? "▸ sample next" : "loading model..."}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            setShown(0);
+            setGenerations([]);
+          }}
+          className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
+        >
+          <span className="btn-content">reset</span>
+        </button>
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
+          {shown} / {generations.length} drawn
+        </span>
+      </div>
+      <table className="w-full max-w-2xl border-collapse font-mono text-sm">
+        <thead>
+          <tr className="text-left">
+            <th className="w-10 border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
+              #
+            </th>
+            <th className="w-40 border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
+              sample
+            </th>
+            <th className="border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
+              p(c | c&lt;t)
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {generations.slice(0, shown).map((g, i) => (
+            <GeneratedRow
+              key={i}
+              index={i}
+              name={g.name}
+              probs={g.probs}
+              isLatest={i === shown - 1}
+            />
+          ))}
+          {shown === 0 && (
+            <tr>
+              <td
+                colSpan={3}
+                className="px-2 py-6 text-center text-[--muted-ink]"
+              >
+                - no samples drawn -
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -221,7 +272,7 @@ function Section({
       className={`py-20 ${visible ? "visible" : "section-animate"}`}
     >
       <header className="mb-10 grid grid-cols-12 gap-6">
-        <div className="col-span-12 md:col-span-3">
+        <div className="col-span-12 lg:col-span-3">
           <div
             className={`figure-number font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink] ${animationStarted ? "animate" : ""}`}
           >
@@ -235,7 +286,7 @@ function Section({
         </div>
         {caption && (
           <p
-            className={`figure-content col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5 ${animationStarted ? "animate" : ""}`}
+            className={`figure-content col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] lg:col-span-7 lg:col-start-5 ${animationStarted ? "animate" : ""}`}
           >
             {caption}
           </p>
@@ -483,7 +534,6 @@ function EmbeddingPanel({ name }: { name: string }) {
         residual stream entering layer 0.
       </p>
 
-      {/* KaTeX equation block */}
       <details className="mt-4 cursor-pointer">
         <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
           Embedding equations
@@ -514,7 +564,6 @@ function AttentionPanel({ name }: { name: string }) {
     return ["·"].concat(clean.split("")).concat(["·"]);
   }, [name]);
 
-  // Generate 4 different attention matrices (one per head)
   const headsMatrices = useMemo(() => {
     const heads = [];
     for (let h = 0; h < 4; h++) {
@@ -624,8 +673,6 @@ function AttentionPanel({ name }: { name: string }) {
       >
         {headsMatrices.map((matrix, idx) => renderHead(matrix, idx))}
       </div>
-      {/* Equation block */}
-      {/* KaTeX equation block */}
       <details className="mt-6 cursor-pointer">
         <summary className="font-mono text-[10px] uppercase tracking-[0.18em] text-[--muted-ink] hover:text-[--ink]">
           Attention formula
@@ -977,113 +1024,6 @@ function GeneratedRow({
   );
 }
 
-function GenerationPanel() {
-  const [shown, setShown] = useState(1);
-  const [wasmReady, setWasmReady] = useState(false);
-  const [generations, setGenerations] = useState<
-    { name: string; probs: number[] }[]
-  >([
-    { name: "mena", probs: [0.41, 0.62, 0.55, 0.48] },
-    { name: "marian", probs: [0.39, 0.58, 0.46, 0.61, 0.52, 0.44] },
-    { name: "carien", probs: [0.27, 0.51, 0.49, 0.42, 0.55, 0.4] },
-    { name: "annie", probs: [0.44, 0.71, 0.63, 0.58, 0.49] },
-    { name: "anayne", probs: [0.42, 0.66, 0.4, 0.45, 0.52, 0.38] },
-    { name: "meelyn", probs: [0.4, 0.61, 0.59, 0.36, 0.47, 0.41] },
-    { name: "ajurle", probs: [0.3, 0.22, 0.31, 0.4, 0.44, 0.37] },
-    { name: "aliee", probs: [0.45, 0.57, 0.6, 0.53, 0.48] },
-    { name: "rera", probs: [0.33, 0.49, 0.43, 0.51] },
-    { name: "ancdy", probs: [0.41, 0.55, 0.28, 0.34, 0.39] },
-  ]);
-
-  useEffect(() => {
-    if (window.wasmReady) {
-      setWasmReady(true);
-    } else {
-      const handler = () => setWasmReady(true);
-      window.addEventListener("wasmReady", handler);
-      return () => window.removeEventListener("wasmReady", handler);
-    }
-  }, []);
-
-  const handleGenerate = async () => {
-    const result = await new Promise<{ name: string; probs: number[] }>(
-      (resolve) => {
-        if (wasmReady) {
-          resolve(window.goGenerateWithProbs(0.5));
-        } else {
-          resolve({ name: window.goGenerate(0.5), probs: [] });
-        }
-      },
-    );
-    setGenerations((prev) => [...prev, result]);
-    setShown((s) => s + 1);
-  };
-
-  return (
-    <div className="col-span-12">
-      <div className="mb-6 flex items-center gap-4 generation-controls">
-        <button
-          onClick={handleGenerate}
-          disabled={!wasmReady}
-          className="btn-ink btn-ink-primary border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--paper] disabled:cursor-not-allowed disabled:text-[--muted-ink]"
-        >
-          <span className="btn-content">
-            {wasmReady ? "▸ sample next" : "loading model..."}
-          </span>
-        </button>
-        <button
-          onClick={() => {
-            setShown(0);
-            setGenerations([]);
-          }}
-          className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
-        >
-          <span className="btn-content">reset</span>
-        </button>
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-          {shown} / {generations.length} drawn
-        </span>
-      </div>
-      <table className="w-full max-w-2xl border-collapse font-mono text-sm">
-        <thead>
-          <tr className="text-left">
-            <th className="w-10 border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
-              #
-            </th>
-            <th className="w-40 border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
-              sample
-            </th>
-            <th className="border-b border-[--ink] px-2 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
-              p(c | c&lt;t)
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {generations.slice(0, shown).map((g, i) => (
-            <GeneratedRow
-              key={i}
-              index={i}
-              name={g.name}
-              probs={g.probs}
-              isLatest={i === shown - 1}
-            />
-          ))}
-          {shown === 0 && (
-            <tr>
-              <td
-                colSpan={3}
-                className="px-2 py-6 text-center text-[--muted-ink]"
-              >
-                - no samples drawn -
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 const BLOCKS = [
   { name: "Input Tokens", params: "-" },
   { name: "Token Embedding (27 × 16)", params: "432 p" },
@@ -1118,7 +1058,39 @@ function ArchitecturePanel() {
   const [visibleBlocks, setVisibleBlocks] = useState<boolean[]>([]);
   const [visibleArrows, setVisibleArrows] = useState<boolean[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
+  const [weightMatrices, setWeightMatrices] = useState<Record<string, number[]> | null>(null);
+  const [weightBlockIdx, setWeightBlockIdx] = useState<number | null>(null);
   const isMobile = useIsMobile(1024);
+
+  const WEIGHT_PARAMS: Record<number, string[]> = {
+    1: ["wte"],
+    2: ["wpe"],
+    4: ["layer0.attn_wq", "layer0.attn_wk", "layer0.attn_wv", "layer0.attn_wo"],
+    7: ["layer0.mlp_fc1", "layer0.mlp_fc2"],
+    9: ["lm_head"],
+  };
+
+  const handleBlockClick = (index: number) => {
+    setSelectedBlock(index);
+    const paramNames = WEIGHT_PARAMS[index];
+    if (paramNames && window.goGetWeightMatrix) {
+      const matrices: Record<string, number[]> = {};
+      paramNames.forEach((name) => {
+        const data = window.goGetWeightMatrix(name);
+        if (data) matrices[name] = data;
+      });
+      if (Object.keys(matrices).length > 0) {
+        setWeightMatrices(matrices);
+        setWeightBlockIdx(index);
+      }
+    }
+  };
+
+  const closeBox = () => {
+    setSelectedBlock(null);
+    setWeightMatrices(null);
+    setWeightBlockIdx(null);
+  };
 
   // Animation logic (unchanged)
   useEffect(() => {
@@ -1159,14 +1131,6 @@ function ArchitecturePanel() {
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, []);
 
-  const handleBlockClick = (index: number) => {
-    setSelectedBlock(index);
-  };
-
-  const closeBox = () => {
-    setSelectedBlock(null);
-  };
-
   return (
     <div className="col-span-12 arch-diagram-container">
       {!isMobile ? (
@@ -1183,8 +1147,9 @@ function ArchitecturePanel() {
                       data-arch-block={i}
                     >
                       <div
-                        className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 ${visibleBlocks[i] ? "visible" : ""}`}
+                        className={`block-animate relative flex w-full max-w-md items-center justify-between border border-[--ink] px-4 py-3 cursor-pointer ${visibleBlocks[i] ? "visible" : ""}`}
                         style={{ animationDelay: `${i * 80}ms` }}
+                        onClick={() => handleBlockClick(i)}
                       >
                         <span className="block-label font-serif text-[15px] text-[--ink]">
                           {b.name}
@@ -1316,6 +1281,76 @@ function ArchitecturePanel() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {weightMatrices && weightBlockIdx !== null && (
+        <div className="mt-6 border border-[--ink] bg-[#FAFAF7] p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="font-serif text-sm text-[--ink]">
+              {BLOCKS[weightBlockIdx]?.name ?? "Weights"}
+            </div>
+            <button
+              onClick={closeBox}
+              className="text-[--muted-ink] hover:text-[--ink] text-sm"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          {Object.entries(weightMatrices).map(([name, data]) => {
+            const rows =
+              name === "layer0.mlp_fc1"
+                ? 64
+                : name === "layer0.mlp_fc2"
+                  ? 16
+                  : name === "wte" || name === "lm_head"
+                    ? 27
+                    : 16;
+            const cols = name === "layer0.mlp_fc1" ? 16 : name === "layer0.mlp_fc2" ? 64 : 16;
+            const maxAbs = Math.max(...data.map((v) => Math.abs(v))) || 1;
+            const cellSize = rows > 30 ? 10 : 14;
+            const displayRows = Math.min(rows, 32);
+            const displayCols = Math.min(cols, 48);
+
+            return (
+              <div key={name} className="mb-4 last:mb-0">
+                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-[--muted-ink] mb-2">
+                  {name} ({rows}×{cols})
+                </div>
+                <div className="overflow-auto max-h-[300px]">
+                  <div
+                    className="inline-grid gap-px"
+                    style={{ gridTemplateColumns: `repeat(${displayCols}, ${cellSize}px)` }}
+                  >
+                    {Array.from({ length: displayRows }).map((_, r) =>
+                      Array.from({ length: displayCols }).map((_, c) => {
+                        const v = data[r * cols + c] ?? 0;
+                        const op = Math.abs(v) / maxAbs;
+                        return (
+                          <div
+                            key={`${r}-${c}`}
+                            className="border border-[--rule]"
+                            style={{
+                              width: cellSize,
+                              height: cellSize,
+                              backgroundColor: `rgba(27,42,74,${Math.min(0.9, op * 0.9).toFixed(3)})`,
+                            }}
+                            title={`[${r},${c}] = ${v.toFixed(4)}`}
+                          />
+                        );
+                      }),
+                    )}
+                  </div>
+                  {(rows > displayRows || cols > displayCols) && (
+                    <div className="font-mono text-[9px] text-[--muted-ink] mt-1 italic">
+                      showing {displayRows}×{displayCols} of {rows}×{cols}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1516,20 +1551,71 @@ function InteractiveTrainerSection() {
   const stepRef = useRef(0);
   const trainingRef = useRef(false);
   const showGenerateRef = useRef(false);
+  const [dataset, setDataset] = useState<"names" | "pokemon" | "countries">("names");
+
+  const loadDataset = useCallback(
+    (ds: string, cb?: () => void) => {
+      setInitStatus("loading data...");
+      if (ds === "names") {
+        setInitStatus("initializing model...");
+        window.goInit((err: string | null) => {
+          if (err) setInitStatus(`error: ${err}`);
+          else {
+            setInitStatus("ready");
+            window.modelReady = true;
+            window.dispatchEvent(new Event("modelReady"));
+          }
+          initRef.current = false;
+          cb?.();
+        });
+        return;
+      }
+      let fetchUrl = "";
+      if (ds === "pokemon")
+        fetchUrl = "/datasets/pokemon.txt";
+      else if (ds === "countries")
+        fetchUrl = "/datasets/countries.txt";
+
+      fetch(fetchUrl)
+        .then((r) => r.text())
+        .then((t) => {
+          const lines = t.split("\n");
+          const clean = lines
+            .map((l) => l.trim().toLowerCase())
+            .filter((l) => l.length > 0);
+          if (window.goInitCustom) {
+            const result = window.goInitCustom(JSON.stringify(clean));
+            if (result === "ok") {
+              setStep(0);
+              stepRef.current = 0;
+              setLoss(null);
+              setLossHistory([]);
+              setGenerated([]);
+              setShowGenerate(false);
+              setInitStatus("ready");
+              window.modelReady = true;
+              window.dispatchEvent(new Event("modelReady"));
+            } else {
+              setInitStatus(`error: ${result}`);
+            }
+          }
+          initRef.current = false;
+          cb?.();
+        })
+        .catch((e) => {
+          setInitStatus(`error: ${e.message}`);
+          initRef.current = false;
+        });
+    },
+    [],
+  );
 
   const safeInit = (cb?: () => void) => {
     if (initRef.current) return;
     initRef.current = true;
     setWasmReady(true);
-    window.goInit((err: string | null, result: string) => {
-      if (err) {
-        setInitStatus(`error: ${err}`);
-      } else {
-        setInitStatus("ready");
-      }
-      initRef.current = false;
-      cb?.();
-    });
+    setInitStatus("loading...");
+    loadDataset(dataset, cb);
   };
 
   useEffect(() => {
@@ -1540,7 +1626,7 @@ function InteractiveTrainerSection() {
       window.addEventListener("wasmReady", handler);
     }
     return () => window.removeEventListener("wasmReady", handler);
-  }, []);
+  }, [dataset]);
 
   const handleReset = () => {
     setTraining(false);
@@ -1550,8 +1636,21 @@ function InteractiveTrainerSection() {
     setLossHistory([]);
     setGenerated([]);
     setShowGenerate(false);
-    setInitStatus("initializing model...");
+    setInitStatus("reloading model...");
     safeInit();
+  };
+
+  const handleDatasetChange = (ds: string) => {
+    setTraining(false);
+    setDataset(ds as typeof dataset);
+    setStep(0);
+    stepRef.current = 0;
+    setLoss(null);
+    setLossHistory([]);
+    setGenerated([]);
+    setShowGenerate(false);
+    setInitStatus("loading data...");
+    initRef.current = false;
   };
 
   const handleMobileGenerate = () => {
@@ -1652,7 +1751,7 @@ function InteractiveTrainerSection() {
       <header className="mb-10 grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-3">
           <div className="font-mono text-xs uppercase tracking-[0.18em] text-[--muted-ink] pt-3 border-t border-[--ink]">
-            Figure 7
+            Figure 9
           </div>
           <div className="mt-3 flex items-center gap-2">
             <h2 className="font-serif text-2xl font-medium leading-tight text-[--ink]">
@@ -1707,6 +1806,24 @@ function InteractiveTrainerSection() {
           </div>
         </div>
       )}
+
+      <div className="mb-6 grid grid-cols-12 gap-6">
+        <div className="col-span-12 md:col-span-4">
+          <label className="mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-[--muted-ink]">
+            dataset
+          </label>
+          <select
+            value={dataset}
+            onChange={(e) => handleDatasetChange(e.target.value)}
+            disabled={training}
+            className="w-full border border-[--rule] bg-[--paper] px-3 py-2 font-mono text-sm text-[--ink] outline-none focus:border-[--ink] disabled:opacity-40"
+          >
+            <option value="names">English Names (32,033)</option>
+            <option value="pokemon">Pokémon (492)</option>
+            <option value="countries">Countries (177)</option>
+          </select>
+        </div>
+      </div>
 
       {isMobile ? (
         <div className="grid grid-cols-12 gap-6">
@@ -1925,8 +2042,8 @@ export default function App() {
 
         <Section
           number="1"
-          title="Tokenization"
-          caption="Each character of the input name is mapped to an integer index in a 27-symbol vocabulary (a–z plus a single boundary marker `·` used as both BOS and EOS). The one-hot column is the canonical representation passed to the embedding layer."
+          title="Tokenize"
+          caption="Each character is mapped to an integer index in a 27-symbol vocabulary. The boundary marker · acts as both beginning and end of sequence."
         >
           <TokenizerPanel name={name} setName={setName} />
         </Section>
@@ -1935,8 +2052,8 @@ export default function App() {
 
         <Section
           number="2"
-          title="Embedding lookup"
-          caption="The model maintains two lookup tables: a learned token embedding of shape (27, 16) and learned positional embedding. The input to the residual stream is the element-wise sum."
+          title="Embed"
+          caption="Every token index is looked up in a learned 16-dimensional table, then added to a sinusoidal positional encoding. The result enters the residual stream."
         >
           <EmbeddingPanel name={name} />
         </Section>
@@ -1945,14 +2062,14 @@ export default function App() {
 
         <Section
           number="3"
-          title="Attention pattern"
-          caption="A causal attention head, visualised as a square matrix of weights. Row i is the query at position i; column j is the key it attends to. The lower-triangular structure enforces autoregressive masking."
+          title="Attend"
+          caption="Four causal self-attention heads run in parallel. Each position computes dot-product scores against all previous positions, softmax-normalises them, and produces a weighted sum of value vectors."
         >
           <AttentionPanel name={name} />
           <div className="col-span-12 lg:col-span-4 lg:pl-6">
             <p className="font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-              Darker cells indicate higher attention weight. Each row sums to
-              1.0 by construction. Hover any cell to read the exact value.
+              Darker cells = higher attention weight. Row sums = 1.0. Hover any
+              cell to read the exact value.
             </p>
           </div>
         </Section>
@@ -1961,18 +2078,28 @@ export default function App() {
 
         <Section
           number="4"
-          title="Training dynamics"
-          caption="Cross-entropy loss measured every 100 steps over a 10 000-step run. The training corpus contains ≈32 000 English given names; the validation split is held out at random."
+          title="Forward Pass"
+          caption="Step through every computation in the forward pass — from token embedding to final probability distribution. Select a position to inspect that token's perspective."
         >
-          <LossPanel />
+          <StepThrough />
         </Section>
 
         <AnimatedSectionDivider />
 
         <Section
           number="5"
-          title="Sampled generations"
-          caption="Names are drawn autoregressively from the trained model with temperature 1.0 until the boundary token is emitted. The bars beneath each name show the model's probability assigned to the chosen character at each step."
+          title="Predict"
+          caption="What does the model believe — before any sampling? Each row shows the top-5 predicted next characters. Click a row to expand the full probability distribution."
+        >
+          <LogitLens />
+        </Section>
+
+        <AnimatedSectionDivider />
+
+        <Section
+          number="6"
+          title="Generate"
+          caption="Names are sampled autoregressively — pick a token, feed it back, repeat until the boundary marker. The bars show the model's confidence in each choice."
         >
           <GenerationPanel />
         </Section>
@@ -1980,11 +2107,21 @@ export default function App() {
         <AnimatedSectionDivider />
 
         <Section
-          number="6"
+          number="7"
           title="Architecture"
-          caption="The full forward graph. Residual additions are shown explicitly; normalisation is RMSNorm rather than LayerNorm."
+          caption="The full forward graph with parameter counts. Click any block to inspect its weight matrix as a heatmap."
         >
           <ArchitecturePanel />
+        </Section>
+
+        <AnimatedSectionDivider />
+
+        <Section
+          number="8"
+          title="Training Dynamics"
+          caption="Cross-entropy loss over 10,000 steps. The gap between train and validation indicates mild overfitting — the model generalises but could benefit from more data or regularisation."
+        >
+          <LossPanel />
         </Section>
 
         <AnimatedSectionDivider />

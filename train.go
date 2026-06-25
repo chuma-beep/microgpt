@@ -249,7 +249,7 @@ func (g *GPT) GenerateWithProbs(temperature float64) (string, []float64) {
 				kHeads[t] = keysCache[0][t][hs:he]
 				vHeads[t] = valuesCache[0][t][hs:he]
 			}
-			headOut, _ := attentionHead(qHead, kHeads, vHeads, headDim)
+			headOut, _, _ := attentionHead(qHead, kHeads, vHeads, headDim)
 			for j := 0; j < headDim; j++ {
 				attnOut[hs+j] = headOut[j]
 			}
