@@ -120,14 +120,23 @@ export default function StepThrough() {
   const [posIdx, setPosIdx] = useState(0);
   const [stageIdx, setStageIdx] = useState(0);
   const [wasmReady, setWasmReady] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
 
   useEffect(() => {
-    if (window.wasmReady) {
-      setWasmReady(true);
-    } else {
+    if (window.wasmReady) setWasmReady(true);
+    else {
       const h = () => setWasmReady(true);
       window.addEventListener("wasmReady", h);
       return () => window.removeEventListener("wasmReady", h);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.modelReady) setModelReady(true);
+    else {
+      const h = () => setModelReady(true);
+      window.addEventListener("modelReady", h);
+      return () => window.removeEventListener("modelReady", h);
     }
   }, []);
 
@@ -152,8 +161,8 @@ export default function StepThrough() {
   }, []);
 
   useEffect(() => {
-    if (wasmReady && name) loadData(name);
-  }, [wasmReady, name, loadData]);
+    if (wasmReady && modelReady && name) loadData(name);
+  }, [wasmReady, modelReady, name, loadData]);
 
   const handleNameChange = (n: string) => {
     setName(n.toLowerCase().replace(/[^a-z]/g, "").slice(0, 14));
@@ -213,7 +222,7 @@ export default function StepThrough() {
     return vocabLabels[t] ?? "";
   }, [data, posIdx, vocabLabels]);
 
-  if (!wasmReady) {
+  if (!wasmReady || !modelReady) {
     return (
       <div className="col-span-12 text-[--muted-ink] font-serif text-sm italic">
         Loading model...
@@ -245,7 +254,7 @@ export default function StepThrough() {
               <button
                 key={i}
                 onClick={() => setPosIdx(i)}
-                className="border px-2 py-1 font-mono text-xs transition-colors"
+                className="btn-ink border px-2 py-1 font-mono text-xs"
                 style={{
                   borderColor: i === posIdx ? "#1B2A4A" : "#D9D6CC",
                   backgroundColor: i === posIdx ? "#1B2A4A" : "transparent",
@@ -266,7 +275,7 @@ export default function StepThrough() {
       )}
 
       {stage && data && (
-        <div className="border border-[--rule] bg-[#FAFAF7]">
+        <div className="border border-[--rule] bg-[--paper]">
           <div className="flex items-center justify-between border-b border-[--rule] px-4 py-3">
             <div>
               <div className="font-serif text-base text-[--ink]">
@@ -313,7 +322,7 @@ export default function StepThrough() {
           <div className="flex items-center justify-between border-t border-[--rule] px-4 py-3">
             <button
               onClick={goPrev}
-              className="btn-ink border border-[--rule] px-4 py-2 font-mono text-xs uppercase tracking-[0.14em] text-[--ink] hover:text-[--paper]"
+              className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
             >
               ← Prev
             </button>
@@ -335,7 +344,7 @@ export default function StepThrough() {
 
             <button
               onClick={goNext}
-              className="btn-ink border border-[--rule] px-4 py-2 font-mono text-xs uppercase tracking-[0.14em] text-[--ink] hover:text-[--paper]"
+              className="btn-ink border border-[--ink] px-4 py-2 font-mono text-xs uppercase tracking-[0.18em] text-[--ink]"
             >
               Next →
             </button>

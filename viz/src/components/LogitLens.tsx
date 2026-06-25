@@ -31,14 +31,23 @@ export default function LogitLens() {
   const [error, setError] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [wasmReady, setWasmReady] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
 
   useEffect(() => {
-    if (window.wasmReady) {
-      setWasmReady(true);
-    } else {
+    if (window.wasmReady) setWasmReady(true);
+    else {
       const h = () => setWasmReady(true);
       window.addEventListener("wasmReady", h);
       return () => window.removeEventListener("wasmReady", h);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.modelReady) setModelReady(true);
+    else {
+      const h = () => setModelReady(true);
+      window.addEventListener("modelReady", h);
+      return () => window.removeEventListener("modelReady", h);
     }
   }, []);
 
@@ -61,8 +70,8 @@ export default function LogitLens() {
   }, []);
 
   useEffect(() => {
-    if (wasmReady && prefix) load(prefix);
-  }, [wasmReady, prefix, load]);
+    if (wasmReady && modelReady && prefix) load(prefix);
+  }, [wasmReady, modelReady, prefix, load]);
 
   const handlePrefixChange = (v: string) => {
     const clean = v.toLowerCase().replace(/[^a-z]/g, "").slice(0, 14);
@@ -81,7 +90,7 @@ export default function LogitLens() {
     return chars;
   }, []);
 
-  if (!wasmReady) {
+  if (!wasmReady || !modelReady) {
     return (
       <div className="col-span-12 text-[--muted-ink] font-serif text-sm italic">
         Loading model...

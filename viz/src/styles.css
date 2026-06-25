@@ -347,6 +347,10 @@
   cursor: not-allowed;
 }
 
+.btn-ink-ghost:not(input):hover:not(:disabled) {
+  color: var(--ink) !important;
+}
+
 .btn-ink-primary {
   border: 2px solid var(--ink) !important;
 }

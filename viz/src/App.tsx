@@ -1556,22 +1556,10 @@ function InteractiveTrainerSection() {
   const loadDataset = useCallback(
     (ds: string, cb?: () => void) => {
       setInitStatus("loading data...");
-      if (ds === "names") {
-        setInitStatus("initializing model...");
-        window.goInit((err: string | null) => {
-          if (err) setInitStatus(`error: ${err}`);
-          else {
-            setInitStatus("ready");
-            window.modelReady = true;
-            window.dispatchEvent(new Event("modelReady"));
-          }
-          initRef.current = false;
-          cb?.();
-        });
-        return;
-      }
       let fetchUrl = "";
-      if (ds === "pokemon")
+      if (ds === "names")
+        fetchUrl = "/datasets/names.txt";
+      else if (ds === "pokemon")
         fetchUrl = "/datasets/pokemon.txt";
       else if (ds === "countries")
         fetchUrl = "/datasets/countries.txt";
