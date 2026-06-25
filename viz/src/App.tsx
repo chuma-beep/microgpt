@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Katex } from "@/components/Katex";
+import ConceptTooltip from "@/components/ConceptTooltip";
 import StepThrough from "@/components/StepThrough";
 import LogitLens from "@/components/LogitLens";
 import { useInView } from "@/hooks/useInView";
@@ -255,7 +256,7 @@ function Section({
 }: {
   number: string;
   title: string;
-  caption?: string;
+  caption?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -1257,8 +1258,8 @@ function ArchitecturePanel() {
 
       {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Total 4,224 parameters - token embeddings 432, positional 256, RMSNorm 2×16,
-        4-head attention 1,024, MLP 2,048, LM head 432. The smallest
+        Total <ConceptTooltip term="parameter">4,224 parameters</ConceptTooltip> - token <ConceptTooltip term="embedding">embeddings</ConceptTooltip> 432, <ConceptTooltip term="positionalEncoding">positional</ConceptTooltip> 256, <ConceptTooltip term="rmsnorm">RMSNorm</ConceptTooltip> 2×16,
+        <ConceptTooltip term="attention">4-head attention</ConceptTooltip> 1,024, <ConceptTooltip term="MLP">MLP</ConceptTooltip> 2,048, LM head 432. The smallest
         configuration that still learns plausible English-looking name
         morphology.
       </p>
@@ -1756,8 +1757,8 @@ function InteractiveTrainerSection() {
         </div>
         <p className="col-span-12 font-serif text-[15px] italic leading-[1.7] text-[--muted-ink] md:col-span-7 md:col-start-5">
           Train the model in your browser. The Go/WASM implementation runs
-          entirely client-side - every forward pass, backward pass, and
-          parameter update happens in real time.
+          entirely client-side - every <ConceptTooltip term="forwardPass">forward pass</ConceptTooltip>, <ConceptTooltip term="backwardPass">backward pass</ConceptTooltip>, and
+          <ConceptTooltip term="parameter"> parameter update</ConceptTooltip> happens in real time.
         </p>
       </header>
 
@@ -2010,19 +2011,19 @@ export default function App() {
             <AnimatedTitle>microGPT</AnimatedTitle>
             <span className="block font-serif text-2xl italic text-[--muted-ink]">
               <AnimatedSubtitle>
-              an interactive walkthrough of a 4 k-parameter transformer
-              trained on names.
+              an interactive walkthrough of a <ConceptTooltip term="parameter">4 k-parameter</ConceptTooltip>{" "}
+              <ConceptTooltip term="transformer">transformer</ConceptTooltip> trained on names.
               </AnimatedSubtitle>
             </span>
           </h1>
           <p className="mt-8 max-w-2xl font-serif text-[15px] leading-[1.75] text-[--ink]">
-            Here we trace a single forward pass - character to distribution - through
-            every component of a minimal decoder-only transformer. Each figure
+            Here we trace a single <ConceptTooltip term="forwardPass">forward pass</ConceptTooltip> - character to distribution - through
+            every component of a minimal <ConceptTooltip term="transformer">decoder-only transformer</ConceptTooltip>. Each figure
             below corresponds to one stage of the computation. Hover, type, and
             sample to inspect the model's internal state.
           </p>
           <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-            vocab 27 · d_model 16 · 4 head · 1 block
+            <ConceptTooltip term="vocabulary">vocab</ConceptTooltip> 27 · <ConceptTooltip term="d_model">d_model</ConceptTooltip> 16 · <ConceptTooltip term="head">4 head</ConceptTooltip> · 1 block
           </div>
         </header>
 
@@ -2041,7 +2042,7 @@ export default function App() {
         <Section
           number="2"
           title="Embed"
-          caption="Every token index is looked up in a learned 16-dimensional table, then added to a sinusoidal positional encoding. The result enters the residual stream."
+          caption={<>Every token index is looked up in a learned 16-dimensional <ConceptTooltip term="embedding">embedding</ConceptTooltip> table, then added to a sinusoidal <ConceptTooltip term="positionalEncoding">positional encoding</ConceptTooltip>. The result enters the <ConceptTooltip term="residual">residual stream</ConceptTooltip>.</>}
         >
           <EmbeddingPanel name={name} />
         </Section>
@@ -2051,7 +2052,7 @@ export default function App() {
         <Section
           number="3"
           title="Attend"
-          caption="Four causal self-attention heads run in parallel. Each position computes dot-product scores against all previous positions, softmax-normalises them, and produces a weighted sum of value vectors."
+          caption={<>Four causal <ConceptTooltip term="attention">self-attention</ConceptTooltip> heads run in parallel. Each position computes dot-product scores against all previous positions, <ConceptTooltip term="softmax">softmax</ConceptTooltip>-normalises them, and produces a weighted sum of value vectors.</>}
         >
           <AttentionPanel name={name} />
           <div className="col-span-12 lg:col-span-4 lg:pl-6">
@@ -2067,7 +2068,7 @@ export default function App() {
         <Section
           number="4"
           title="Forward Pass"
-          caption="Step through every computation in the forward pass — from token embedding to final probability distribution. Select a position to inspect that token's perspective."
+          caption={<>Step through every computation in the <ConceptTooltip term="forwardPass">forward pass</ConceptTooltip> — from token <ConceptTooltip term="embedding">embedding</ConceptTooltip> to final probability distribution. Select a position to inspect that token's perspective.</>}
         >
           <StepThrough />
         </Section>
@@ -2077,7 +2078,7 @@ export default function App() {
         <Section
           number="5"
           title="Predict"
-          caption="What does the model believe — before any sampling? Each row shows the top-5 predicted next characters. Click a row to expand the full probability distribution."
+          caption={<>What does the model believe — before any sampling? Each row shows the top-5 predicted next characters (<ConceptTooltip term="logits">logits</ConceptTooltip> before <ConceptTooltip term="softmax">softmax</ConceptTooltip>). Click a row to expand the full probability distribution.</>}
         >
           <LogitLens />
         </Section>
@@ -2087,7 +2088,7 @@ export default function App() {
         <Section
           number="6"
           title="Generate"
-          caption="Names are sampled autoregressively — pick a token, feed it back, repeat until the boundary marker. The bars show the model's confidence in each choice."
+          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back, repeat until the boundary marker. The bars show the model's confidence in each choice.</>}
         >
           <GenerationPanel />
         </Section>
@@ -2097,7 +2098,7 @@ export default function App() {
         <Section
           number="7"
           title="Architecture"
-          caption="The full forward graph with parameter counts. Click any block to inspect its weight matrix as a heatmap."
+          caption={<>The full forward graph with <ConceptTooltip term="parameter">parameter</ConceptTooltip> counts. Click any block to inspect its weight matrix as a heatmap.</>}
         >
           <ArchitecturePanel />
         </Section>
@@ -2107,7 +2108,7 @@ export default function App() {
         <Section
           number="8"
           title="Training Dynamics"
-          caption="Cross-entropy loss over 10,000 steps. The gap between train and validation indicates mild overfitting — the model generalises but could benefit from more data or regularisation."
+          caption={<>Cross-entropy <ConceptTooltip term="loss">loss</ConceptTooltip> over 10,000 steps. The gap between train and validation indicates mild <ConceptTooltip term="overfitting">overfitting</ConceptTooltip> — the model generalises but could benefit from more data or <ConceptTooltip term="regularization">regularisation</ConceptTooltip>.</>}
         >
           <LossPanel />
         </Section>

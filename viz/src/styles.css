@@ -779,6 +779,20 @@ input:hover,
 }
 
 /* ========================================
+   CONCEPT TOOLTIPS
+   ======================================== */
+
+.concept-term {
+  cursor: help;
+  border-bottom: 1px dotted var(--muted-ink);
+  transition: border-color 150ms ease;
+}
+
+.concept-term:hover {
+  border-bottom-color: var(--ink);
+}
+
+/* ========================================
    MOBILE RESPONSIVE STYLES (< 640px)
    ======================================== */
 

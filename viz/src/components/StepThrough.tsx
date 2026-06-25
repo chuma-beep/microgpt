@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ConceptTooltip from "@/components/ConceptTooltip";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface StepThroughStage {
@@ -20,20 +21,83 @@ interface StepThroughData {
   stages: StepThroughStage[];
 }
 
-const STAGE_DESCRIPTIONS: Record<number, string> = {
-  0: "Character index looked up in learned embedding table, added to sinusoidal position vector.",
-  1: "RMSNorm rescales each vector so RMS ≈ 1. Learnable gamma parameters scale each dimension.",
-  2: "Three learned projections (Wq, Wk, Wv) map each position into query, key, value space.",
-  3: "Raw dot-product scores Q·Kᵀ / √d for each attention head. Not yet normalized.",
-  4: "Softmax normalizes scores to weights summing to 1.0. Lower triangle is causal-masked.",
-  5: "Weighted sum of value vectors produces per-head output. Heads concatenated.",
-  6: "Output projection Wo mixes head outputs. Ready for residual add.",
-  7: "RMSNorm before the MLP block. Same operation, separate gamma parameters.",
-  8: "Fully-connected layer expands 16 → 64 dimensions. Each neuron sees all 16 inputs.",
-  9: "ReLU zeroes out negative activations. Introduces non-linearity.",
-  10: "Second fc layer compresses 64 → 16. Residual from before MLP is then added.",
-  11: "LM head projects 16-dim hidden state to 27-dim logits (one score per vocabulary token).",
-  12: "Softmax converts logits to probabilities. The model's belief about the next token.",
+const STAGE_DESCRIPTIONS: Record<number, React.ReactNode> = {
+  0: (
+    <>
+      Character index looked up in learned <ConceptTooltip term="embedding">embedding</ConceptTooltip> table, added to
+      sinusoidal <ConceptTooltip term="positionalEncoding">position vector</ConceptTooltip>.
+    </>
+  ),
+  1: (
+    <>
+      <ConceptTooltip term="rmsnorm">RMSNorm</ConceptTooltip> rescales each vector so RMS ≈ 1. Learnable gamma{" "}
+      <ConceptTooltip term="parameter">parameters</ConceptTooltip> scale each dimension.
+    </>
+  ),
+  2: (
+    <>
+      Three learned projections (Wq, Wk, Wv) map each position into query, key, value space — the
+      building blocks of <ConceptTooltip term="attention">attention</ConceptTooltip>.
+    </>
+  ),
+  3: (
+    <>
+      Raw dot-product scores Q·Kᵀ / √d for each <ConceptTooltip term="attention">attention head</ConceptTooltip>. Not yet
+      normalized.
+    </>
+  ),
+  4: (
+    <>
+      <ConceptTooltip term="softmax">Softmax</ConceptTooltip> normalizes scores to weights summing to 1.0. Lower triangle is
+      causal-masked (position can't look ahead).
+    </>
+  ),
+  5: (
+    <>
+      Weighted sum of value vectors produces per-head output. Heads concatenated back to 16-dim.
+    </>
+  ),
+  6: (
+    <>
+      Output projection Wo mixes head outputs. Ready for <ConceptTooltip term="residual">residual</ConceptTooltip> add.
+    </>
+  ),
+  7: (
+    <>
+      <ConceptTooltip term="rmsnorm">RMSNorm</ConceptTooltip> before the <ConceptTooltip term="MLP">MLP</ConceptTooltip> block. Same operation, separate gamma{" "}
+      <ConceptTooltip term="parameter">parameters</ConceptTooltip>.
+    </>
+  ),
+  8: (
+    <>
+      <ConceptTooltip term="MLP">Fully-connected layer</ConceptTooltip> expands 16 → 64 dimensions. Each neuron sees all 16
+      inputs.
+    </>
+  ),
+  9: (
+    <>
+      <ConceptTooltip term="relu">ReLU</ConceptTooltip> zeroes out negative activations. Introduces non-linearity — without
+      this, two linear layers would collapse into one.
+    </>
+  ),
+  10: (
+    <>
+      Second fc layer compresses 64 → 16. <ConceptTooltip term="residual">Residual</ConceptTooltip> from before{" "}
+      <ConceptTooltip term="MLP">MLP</ConceptTooltip> is then added.
+    </>
+  ),
+  11: (
+    <>
+      LM head projects 16-dim hidden state to 27-dim <ConceptTooltip term="logits">logits</ConceptTooltip> (one score per{" "}
+      <ConceptTooltip term="vocabulary">vocabulary</ConceptTooltip> token).
+    </>
+  ),
+  12: (
+    <>
+      <ConceptTooltip term="softmax">Softmax</ConceptTooltip> converts <ConceptTooltip term="logits">logits</ConceptTooltip> to probabilities. The model's
+      belief about the next token.
+    </>
+  ),
 };
 
 function VecRow({
