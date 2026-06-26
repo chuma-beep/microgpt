@@ -17,7 +17,7 @@ No external ML libraries. Every matrix multiply, backprop step, and optimizer up
 
 
 
-![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-6e7681?style=flat-square)
 ![Parameters](https://img.shields.io/badge/Parameters-~4.2k-f0883e?style=flat-square)
 ![Vocab](https://img.shields.io/badge/Vocab-27_tokens-3fb950?style=flat-square)
@@ -41,11 +41,11 @@ Loaded 32033 names
 Vocab size: 27
 Train: 28829, Val: 3204
 
-step  100/10000   avg loss = 3.0746
-step  200/10000   avg loss = 2.5897
-step  300/10000   avg loss = 2.3875
-step  500/10000   avg loss = 2.3157   val loss = 2.7141
-step 1000/10000   avg loss = 2.3025   val loss = 2.6430
+step 100/10000, avg loss = 3.0746
+step 200/10000, avg loss = 2.5897
+step 300/10000, avg loss = 2.3875
+step 500/10000, avg loss = 2.3157, val loss = 2.7141
+step 1000/10000, avg loss = 2.3025, val loss = 2.6430
 
 --- Generated names (temperature 0.5) ---
   1: derinne       11: mare

@@ -1,4 +1,4 @@
-// adam.go — Adam optimizer with beta1=0.85, beta2=0.99 (as in microgpt)
+// adam.go: Adam optimizer with beta1=0.9, beta2=0.999 (as in microgpt)
 package main
 
 import "math"
