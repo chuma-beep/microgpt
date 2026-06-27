@@ -893,6 +893,87 @@ input:hover,
 }
 
 /* ========================================
+   CONCEPT BOTTOM SHEET (mobile)
+   ======================================== */
+
+.concept-term[data-active] {
+  border-bottom-color: var(--ink);
+}
+
+.concept-sheet-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  z-index: 99;
+  animation: dim-fade-in 200ms ease-out;
+}
+
+.concept-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-top: 0.5px solid var(--ink);
+  z-index: 100;
+  animation: sheet-slide-up 200ms ease-out;
+}
+
+.concept-sheet-handle {
+  width: 32px;
+  height: 3px;
+  background: var(--rule);
+  border-radius: 2px;
+  margin: 8px auto 0;
+}
+
+.concept-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.concept-sheet-header .concept-label {
+  margin-bottom: 0;
+}
+
+.concept-sheet-close {
+  font-size: 10px;
+  color: var(--muted-ink);
+  cursor: pointer;
+  border: 0.5px solid var(--rule);
+  padding: 1px 6px;
+  background: none;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.concept-sheet-body {
+  padding: 12px 14px 16px;
+}
+
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes dim-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
    MOBILE RESPONSIVE STYLES (< 640px)
    ======================================== */
 

@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import CONCEPTS, { type ConceptDef, type InlineLink } from "@/data/concepts";
 import {
   Tooltip,
@@ -83,10 +85,104 @@ export default function ConceptTooltip({
   const concept = KNOWN_CONCEPTS[term];
   if (!concept) return <>{children}</>;
 
+  const [isOpen, setIsOpen] = useState(false);
+  const [isTouch, setIsTouch] = useState(
+    () => window.matchMedia("(hover: none)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: none)");
+    const handler = (e: MediaQueryListEvent) => setIsTouch(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!isTouch) setIsOpen(false);
+  }, [isTouch]);
+
+  useEffect(() => {
+    if (isOpen && isTouch) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen, isTouch]);
+
   const allLinks = [
     ...SHARED_INLINE_LINKS,
     ...(concept.inlineLinks ?? []),
   ];
+
+  if (isTouch) {
+    return (
+      <>
+        <span
+          className="concept-term"
+          data-term={term}
+          data-active={isOpen || undefined}
+          onClick={() => setIsOpen((p) => !p)}
+        >
+          {children}
+        </span>
+        {isOpen &&
+          createPortal(
+            <>
+              <div
+                className="concept-sheet-dim"
+                onClick={() => setIsOpen(false)}
+              />
+              <div className="concept-sheet">
+                <div className="concept-sheet-handle" />
+                <div className="concept-sheet-body">
+                  <div className="concept-sheet-header">
+                    <span className="concept-label">{term}</span>
+                    <button
+                      className="concept-sheet-close"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <span className="concept-body">
+                    {renderWithLinks(concept.short, allLinks)}
+                  </span>
+
+                  {concept.analogy && (
+                    <span className="concept-analogy">{concept.analogy}</span>
+                  )}
+
+                  <div className="concept-footer">
+                    <a
+                      className="concept-footer-link"
+                      href={concept.source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      learn more ↗
+                    </a>
+                    <span
+                      className={`concept-badge ${concept.source.type}`}
+                    >
+                      {concept.source.badge}
+                    </span>
+                  </div>
+
+                  {concept.detail && (
+                    <details className="concept-detail">
+                      <summary>more</summary>
+                      <p>{renderWithLinks(concept.detail, allLinks)}</p>
+                    </details>
+                  )}
+                </div>
+              </div>
+            </>,
+            document.body,
+          )}
+      </>
+    );
+  }
 
   return (
     <TooltipProvider delay={200}>
