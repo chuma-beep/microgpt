@@ -65,7 +65,7 @@ function renderWithLinks(
           target="_blank"
           rel="noopener noreferrer"
         >
-          {part} ↗
+          {part} ↗︎
         </a>
       );
     }
@@ -160,7 +160,7 @@ export default function ConceptTooltip({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      learn more ↗
+                      learn more ↗︎
                     </a>
                     <span
                       className={`concept-badge ${concept.source.type}`}
@@ -219,7 +219,7 @@ export default function ConceptTooltip({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                learn more ↗
+                learn more ↗︎
               </a>
               <span className={`concept-badge ${concept.source.type}`}>
                 {concept.source.badge}
