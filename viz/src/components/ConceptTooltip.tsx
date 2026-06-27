@@ -23,7 +23,7 @@ const SHARED_INLINE_LINKS: InlineLink[] = [
   },
   {
     match: "gradients",
-    url: "https://distill.pub/2016/resnet/",
+    url: "https://en.wikipedia.org/wiki/Vanishing_gradient_problem",
   },
   {
     match: "activation function",

@@ -53,9 +53,9 @@ const CONCEPTS: Record<string, ConceptDef> = {
     analogy:
       "Like describing a colour with RGB: 3 numbers. Use 16 and you capture finer distinctions.",
     source: {
-      url: "https://distill.pub/2016/misread-tsne/",
-      label: "distill.pub · Understanding Embeddings ↗",
-      badge: "distill.pub",
+      url: "https://jalammar.github.io/illustrated-word2vec/",
+      label: "jalammar.github.io · The Illustrated Word2vec ↗",
+      badge: "jalammar.github.io",
       type: "article",
     },
     detail:
@@ -193,9 +193,9 @@ const CONCEPTS: Record<string, ConceptDef> = {
     analogy:
       "Like taking notes in the margin instead of rewriting the whole page — the original is always preserved.",
     source: {
-      url: "https://distill.pub/2016/resnet/",
-      label: "distill.pub · Residual Networks ↗",
-      badge: "distill.pub",
+      url: "https://mbrenndoerfer.com/writing/residual-connections-gradient-highways-deep-transformers",
+      label: "mbrenndoerfer.com · Residual Connections ↗",
+      badge: "mbrenndoerfer.com",
       type: "article",
     },
     detail:
@@ -249,9 +249,9 @@ const CONCEPTS: Record<string, ConceptDef> = {
     analogy:
       "Like the width of a highway — wider roads handle more traffic but cost more to build.",
     source: {
-      url: "https://distill.pub/2016/misread-tsne/",
-      label: "distill.pub · Understanding Embeddings ↗",
-      badge: "distill.pub",
+      url: "https://jalammar.github.io/illustrated-word2vec/",
+      label: "jalammar.github.io · The Illustrated Word2vec ↗",
+      badge: "jalammar.github.io",
       type: "article",
     },
     detail:
