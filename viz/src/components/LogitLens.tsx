@@ -228,7 +228,7 @@ export default function LogitLens() {
       )}
 
       <p className="mt-4 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        What the model believes — before any sampling or temperature. Each row
+        What the model believes, before any sampling or temperature. Each row
         shows the top-5 predicted next characters for that position. ✓ means the
         actual next character was in the top 5. Click a row to see the
         probability bars.

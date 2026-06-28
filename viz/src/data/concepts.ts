@@ -23,7 +23,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "A number the model learns during training. Like a dial the model turns to make better predictions. This model has about 4,200 of them.",
     analogy:
-      "A calculator has fixed formulas — this model has 4,224 adjustable ones it figured out on its own.",
+      "Like a calculator has fixed formulas, this model has 4,224 adjustable ones it figured out on its own.",
     source: {
       url: "https://www.3blue1brown.com/lessons/neural-networks",
       label: "3blue1brown · Neural Networks ↗",
@@ -65,7 +65,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "Adds position information (1st, 2nd, 3rd…) so the model knows the order of characters - otherwise 'emma' and 'amme' would look identical.",
     analogy:
-      "Like numbering the pages of a book so chapters stay in order.",
+      "This is like numbering the pages of a book so chapters stay in order.",
     source: {
       url: "https://www.3blue1brown.com/lessons/attention",
       label: "3blue1brown · Attention ↗",
@@ -93,7 +93,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "A mathematical operation that turns a list of scores into probabilities that add up to 1.0, so the model can pick one option.",
     analogy:
-      "Like ranking contestants by applause — the loudest gets first place, but everyone gets some share.",
+      "Like ranking contestants by applause where the loudest gets first place, but everyone gets some share.",
     source: {
       url: "https://en.wikipedia.org/wiki/Softmax_function",
       label: "Wikipedia · Softmax function ↗",
@@ -115,13 +115,13 @@ const CONCEPTS: Record<string, ConceptDef> = {
       type: "wiki",
     },
     detail:
-      "The LM head (a linear projection) converts the 16-dimensional hidden state into 27 logits - one per vocabulary token. These logits then pass through softmax to become probabilities.",
+      "The LM head (a linear projection) converts the 16-dimensional hidden state into 27 logits, one per vocabulary token. These logits then pass through softmax to become probabilities.",
   },
   loss: {
     short:
       "A score that measures how wrong the model's prediction was. Lower is better. The model trains by trying to make this number smaller.",
     analogy:
-      "Like a penalty score in a game — the model plays 10,000 rounds and gets less wrong each time.",
+      "This is like an athelete traning to shoot a basketball better the more shots you take in practice, the more accurate you shoot",
     source: {
       url: "https://en.wikipedia.org/wiki/Cross-entropy",
       label: "Wikipedia · Cross-entropy ↗",
@@ -133,9 +133,9 @@ const CONCEPTS: Record<string, ConceptDef> = {
   },
   forwardPass: {
     short:
-      "Running an input through the model from start to finish - from character → embedding → attention → prediction - to get an output.",
+     "This is the process of passing input data through the model from start to finish, from character → embedding → attention → prediction - to get an output.",
     analogy:
-      "Like a factory assembly line — each station transforms the product and passes it to the next.",
+      "You can think of it as a factory assembly line where each station transforms the product and passes it to the next.",
     source: {
       url: "https://www.3blue1brown.com/lessons/neural-networks",
       label: "3blue1brown · Neural Networks ↗",
@@ -143,7 +143,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
       type: "video",
     },
     detail:
-      "In the forward pass, data flows through each layer in order: token lookup, positional encoding, RMSNorm, attention, residual add, more RMSNorm, MLP, another residual add, and finally the LM head and softmax. No learning happens here - just computation.",
+      "In the forward pass, data flows through each layer in order: token lookup, positional encoding, RMSNorm, attention, residual add, more RMSNorm, MLP, another residual add, and finally the LM head and softmax. No learning happens here just computation.",
   },
   backwardPass: {
     short:
@@ -163,7 +163,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "A gentle rescaling that keeps numbers from getting too big or too small as they pass through the network's layers.",
     analogy:
-      "Like an automatic volume limiter — keeps everything audible without clipping.",
+      "You can think of it Like an automatic volume limiter that keeps everything audible without clipping.",
     source: {
       url: "https://en.wikipedia.org/wiki/Layer_normalization",
       label: "Wikipedia · Layer normalisation ↗",
@@ -191,7 +191,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "A shortcut that adds the original input directly to a layer's output. This helps information flow through the network without degrading.",
     analogy:
-      "Like taking notes in the margin instead of rewriting the whole page — the original is always preserved.",
+      "This is Like taking notes in the margin instead of rewriting the whole page so the original is always preserved.",
     source: {
       url: "https://mbrenndoerfer.com/writing/residual-connections-gradient-highways-deep-transformers",
       label: "mbrenndoerfer.com · Residual Connections ↗",
@@ -219,7 +219,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "When the model memorises the training data instead of learning general patterns - it does well on names it has seen but worse on new ones.",
     analogy:
-      "Like memorising the answer key instead of learning the subject — you ace that test but fail the next one.",
+      "Like memorising the answer key instead of learning the subject, you ace that test but fail the next one.",
     source: {
       url: "https://en.wikipedia.org/wiki/Overfitting",
       label: "Wikipedia · Overfitting ↗",
@@ -233,7 +233,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "The set of symbols the model knows. Here: the 26 lowercase letters plus a boundary marker (·), for 27 total.",
     analogy:
-      "Like a 27-key typewriter — every name has to be spelled with just those keys.",
+      "Imagine you have a 27-key typewriter where every name has to be spelled with just those keys.",
     source: {
       url: "https://en.wikipedia.org/wiki/Tokenization",
       label: "Wikipedia · Tokenization ↗",
@@ -247,7 +247,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "The size of the model's internal 'working space' for each position - here 16 numbers. Larger d_model means more capacity but more parameters.",
     analogy:
-      "Like the width of a highway — wider roads handle more traffic but cost more to build.",
+      "This is like the width of a highway, logically wider roads would handle more traffic but cost more to build.",
     source: {
       url: "https://jalammar.github.io/illustrated-word2vec/",
       label: "jalammar.github.io · The Illustrated Word2vec ↗",
@@ -261,7 +261,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "An activation function that zeroes out negative numbers and keeps positive numbers as-is. It adds non-linearity so the model can learn patterns.",
     analogy:
-      "Like a gate that only lets positive people through — negatives are stopped at the door.",
+      "Like a gate that only lets positive people through and negatives are stopped at the door.",
     source: {
       url: "https://en.wikipedia.org/wiki/Rectifier_(neural_networks)",
       label: "Wikipedia · ReLU ↗",
@@ -275,7 +275,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "Techniques that prevent the model from memorising and help it generalise better to new data.",
     analogy:
-      "Like studying with both hands tied behind your back — harder to learn, but you learn what truly matters.",
+     "", 
     source: {
       url: "https://en.wikipedia.org/wiki/Regularization_(mathematics)",
       label: "Wikipedia · Regularization ↗",
@@ -289,7 +289,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
     short:
       "An 'attention head' is one independent attention computation. This model runs 4 heads in parallel, each focusing on different patterns.",
     analogy:
-      "Like 4 readers skimming the same sentence, each highlighting different things, then comparing notes.",
+      "Imagie we have 4 readers skimming the same sentence, each highlighting different things, then comparing notes.",
     source: {
       url: "https://www.3blue1brown.com/lessons/attention",
       label: "3blue1brown · Attention in Transformers ↗",
