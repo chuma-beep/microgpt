@@ -286,7 +286,7 @@ func (g *GPT) GenerateWithProbs(temperature float64) (string, []float64) {
 			}
 		}
 		next := sampleMultinomial(probs)
-		if next == tok.BOS {
+		if next == tok.EOS {
 			break
 		}
 		probsList = append(probsList, probs[next])

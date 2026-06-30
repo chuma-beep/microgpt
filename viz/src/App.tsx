@@ -29,10 +29,14 @@ const INK_GREEN = "#2D4A3E";
 const INK_RED = "#4A2D2D";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+const BOS_IDX = 26;
+const EOS_IDX = 27;
+const BOS_CHAR = "\u25B7";
+const EOS_CHAR = "\u25A1";
 const charToIdx = (c: string) => {
-  if (c === ".") return 0;
-  const i = ALPHABET.indexOf(c.toLowerCase());
-  return i < 0 ? 0 : i + 1;
+  if (c === BOS_CHAR) return BOS_IDX;
+  if (c === EOS_CHAR) return EOS_IDX;
+  return Math.max(0, ALPHABET.indexOf(c.toLowerCase()));
 };
 
 function hashFloat(seed: number) {
@@ -307,7 +311,7 @@ function TokenizerPanel({
 }) {
   const sequence = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
-    return ["."].concat(clean.split("")).concat(["."]);
+    return [BOS_CHAR].concat(clean.split("")).concat([EOS_CHAR]);
   }, [name]);
 
   const [animateKey, setAnimateKey] = useState(0);
@@ -355,7 +359,7 @@ function TokenizerPanel({
                 index
               </th>
               <th className="border-b border-[--ink] px-3 py-2 text-[11px] font-normal uppercase tracking-[0.18em] text-[--muted-ink]">
-                one-hot (27 dims)
+                one-hot (28 dims)
               </th>
             </tr>
           </thead>
@@ -370,8 +374,10 @@ function TokenizerPanel({
                 >
                   <td className="px-3 py-2 text-[--muted-ink]">{i}</td>
                   <td className="px-3 py-2">
-                    {c === "." ? (
-                      <span className="text-[--muted-ink]">⟨bos/eos⟩</span>
+                    {c === BOS_CHAR ? (
+                      <span className="text-[--muted-ink]">⟨BOS⟩</span>
+                    ) : c === EOS_CHAR ? (
+                      <span className="text-[--muted-ink]">⟨EOS⟩</span>
                     ) : (
                       c
                     )}
@@ -379,7 +385,7 @@ function TokenizerPanel({
                   <td className="px-3 py-2">{idx}</td>
                   <td className="px-3 py-1">
                     <div className="flex gap-[2px]">
-                      {Array.from({ length: 27 }).map((_, k) => (
+                      {Array.from({ length: 28 }).map((_, k) => (
                         <div
                           key={k}
                           className={`h-3 w-[10px] border border-[--rule] heatmap-cell ${k === idx && rowPulsed.has(i) ? "one-hot-cell-pulse" : ""}`}
@@ -450,7 +456,7 @@ function HeatRow({
 function EmbeddingPanel({ name }: { name: string }) {
   const sequence = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
-    return ["."].concat(clean.split("")).concat(["."]);
+    return [BOS_CHAR].concat(clean.split("")).concat([EOS_CHAR]);
   }, [name]);
 
   const [focus, setFocus] = useState(0);
@@ -489,7 +495,7 @@ function EmbeddingPanel({ name }: { name: string }) {
                 color: i === focusIdx ? PAPER : INK,
               }}
             >
-              {c === "." ? "·" : c}
+              {c === BOS_CHAR ? "▷" : c === EOS_CHAR ? "□" : c}
             </button>
           ))}
         </div>
@@ -558,11 +564,11 @@ function AttentionPanel({ name }: { name: string }) {
 
   const tokens = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
-    return ["."].concat(clean.split("")).concat(["."]).map(charToIdx);
+    return [BOS_CHAR].concat(clean.split("")).concat([EOS_CHAR]).map(charToIdx);
   }, [name]);
   const labels = useMemo(() => {
     const clean = name.toLowerCase().replace(/[^a-z]/g, "");
-    return ["·"].concat(clean.split("")).concat(["·"]);
+    return ["▷"].concat(clean.split("")).concat(["□"]);
   }, [name]);
 
   const headsMatrices = useMemo(() => {
@@ -1027,7 +1033,7 @@ function GeneratedRow({
 
 const BLOCKS = [
   { name: "Input Tokens", params: "-" },
-  { name: "Token Embedding (27 × 16)", params: "432 p" },
+  { name: "Token Embedding (28 × 16)", params: "448 p" },
   { name: "Positional Embedding (16 × 16)", params: "256 p" },
   { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "4-Head Attention", params: "1,024 p" },
@@ -1035,13 +1041,13 @@ const BLOCKS = [
   { name: "RMSNorm (16 p)", params: "16 p" },
   { name: "MLP (16→64→16)", params: "2,048 p" },
   { name: "Residual ⊕", params: "-" },
-  { name: "LM Head (16 × 27)", params: "432 p" },
+  { name: "LM Head (16 × 28)", params: "448 p" },
   { name: "Softmax", params: "-" },
-  { name: "Output Distribution (27 dims)", params: "27 dims" },
+  { name: "Output Distribution (28 dims)", params: "28 dims" },
 ];
 
 const TOOLTIPS: Record<number, string> = {
-  0: "Each character of the name is converted to a number. 'a' becomes 1, 'b' becomes 2, and so on. The boundary marker · becomes 0.",
+  0: "Each character of the name is converted to a number. 'a' becomes 0, 'b' becomes 1, and so on. The BOS marker ▷ becomes 26 and EOS marker □ becomes 27.",
   1: "Each token number is looked up in a table of learned vectors. Think of it as converting a simple number into a rich 16-dimensional description the model can reason about. This table has 432 learnable values.",
   2: "Encodes the position of each character (0, 1, 2, …) as a sinusoidal pattern, scaled so that close positions have similar representations. 256 learnable values.",
   3: "Normalisation rescales the values so they don't grow too large or too small as they pass through the network. RMSNorm has 16 learnable scale parameters.",
@@ -1050,9 +1056,9 @@ const TOOLTIPS: Record<number, string> = {
   6: "A second RMSNorm layer before the MLP block. Same operation, separate learnable scale parameters.",
   7: "A small feedforward network that processes each position independently. Expands from 16→64, applies ReLU, then compresses back to 16. 2,048 learnable values.",
   8: "Another shortcut connection around the MLP block - preserves information and makes gradients flow more easily.",
-  9: "The final projection that converts the 16-dimensional vector into 27 scores - one for each possible next character.",
-  10: "Converts the 27 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character.",
-  11: "The final result - a probability for each of the 27 tokens. The model samples one token, appends it, and repeats until the boundary marker.",
+  9: "The final projection that converts the 16-dimensional vector into 28 scores - one for each possible next character or boundary token.",
+  10: "Converts the 28 raw scores into probabilities that sum to 1.0. The model then samples from this distribution to pick the next character.",
+  11: "The final result - a probability for each of the 28 tokens. The model samples one token, appends it, and repeats until the EOS marker.",
 };
 
 function ArchitecturePanel() {
@@ -1258,8 +1264,8 @@ function ArchitecturePanel() {
 
       {/* Unchanged explanatory paragraph */}
       <p className="mt-6 max-w-2xl font-serif text-sm italic leading-[1.7] text-[--muted-ink]">
-        Total <ConceptTooltip term="parameter">4,224 parameters</ConceptTooltip> - token <ConceptTooltip term="embedding">embeddings</ConceptTooltip> 432, <ConceptTooltip term="positionalEncoding">positional</ConceptTooltip> 256, <ConceptTooltip term="rmsnorm">RMSNorm</ConceptTooltip> 2×16,
-        <ConceptTooltip term="attention">4-head attention</ConceptTooltip> 1,024, <ConceptTooltip term="MLP">MLP</ConceptTooltip> 2,048, LM head 432. The smallest
+        Total <ConceptTooltip term="parameter">4,256 parameters</ConceptTooltip> - token <ConceptTooltip term="embedding">embeddings</ConceptTooltip> 448, <ConceptTooltip term="positionalEncoding">positional</ConceptTooltip> 256, <ConceptTooltip term="rmsnorm">RMSNorm</ConceptTooltip> 2×16,
+        <ConceptTooltip term="attention">4-head attention</ConceptTooltip> 1,024, <ConceptTooltip term="MLP">MLP</ConceptTooltip> 2,048, LM head 448. The smallest
         configuration that still learns plausible English-looking name
         morphology.
       </p>
@@ -1306,7 +1312,7 @@ function ArchitecturePanel() {
                 : name === "layer0.mlp_fc2"
                   ? 16
                   : name === "wte" || name === "lm_head"
-                    ? 27
+                    ? 28
                     : 16;
             const cols = name === "layer0.mlp_fc1" ? 16 : name === "layer0.mlp_fc2" ? 64 : 16;
             const maxAbs = Math.max(...data.map((v) => Math.abs(v))) || 1;
@@ -2023,7 +2029,7 @@ export default function App() {
             sample to inspect the model's internal state.
           </p>
           <div className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-            <ConceptTooltip term="vocabulary">vocab</ConceptTooltip> 27 · <ConceptTooltip term="d_model">d_model</ConceptTooltip> 16 · <ConceptTooltip term="head">4 head</ConceptTooltip> · 1 block
+            <ConceptTooltip term="vocabulary">vocab</ConceptTooltip> 28 · <ConceptTooltip term="d_model">d_model</ConceptTooltip> 16 · <ConceptTooltip term="head">4 head</ConceptTooltip> · 1 block
           </div>
         </header>
 
@@ -2032,7 +2038,7 @@ export default function App() {
         <Section
           number="1"
           title="Tokenize"
-          caption="Each character is mapped to an integer index in a 27-symbol vocabulary. The boundary marker · acts as both beginning and end of sequence."
+          caption="Each character is mapped to an integer index in a 28-symbol vocabulary. The ▷ marker marks the start (BOS) and □ marks the end (EOS) of a sequence."
         >
           <TokenizerPanel name={name} setName={setName} />
         </Section>
@@ -2088,7 +2094,7 @@ export default function App() {
         <Section
           number="6"
           title="Generate"
-          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back, repeat until the boundary marker. The bars show the model's confidence in each choice.</>}
+          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back, repeat until the EOS token □. The bars show the model's confidence in each choice.</>}
         >
           <GenerationPanel />
         </Section>

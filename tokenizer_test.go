@@ -8,17 +8,19 @@ func TestTokenizerNew(t *testing.T) {
 	names := []string{"abc", "def", "hello"}
 	tok := NewTokenizer(names)
 
-	// Should have 'a','b','c','d','e','f','h','l','o' = 9 unique chars + 1 BOS = 10
-	if tok.VocabSize != 10 {
-		t.Errorf("VocabSize = %d, want 10", tok.VocabSize)
+	// 9 unique chars + BOS + EOS = 11
+	if tok.VocabSize != 11 {
+		t.Errorf("VocabSize = %d, want 11", tok.VocabSize)
 	}
 	if tok.BOS != 9 {
 		t.Errorf("BOS = %d, want 9", tok.BOS)
 	}
+	if tok.EOS != 10 {
+		t.Errorf("EOS = %d, want 10", tok.EOS)
+	}
 
-	// Check BOS maps to the last index
 	if len(tok.IdxToChar) != 9 {
-		t.Errorf("len(IdxToChar) = %d, want 9 (chars only, no BOS)", len(tok.IdxToChar))
+		t.Errorf("len(IdxToChar) = %d, want 9 (chars only, no BOS/EOS)", len(tok.IdxToChar))
 	}
 
 	// Verify characters are sorted
@@ -47,12 +49,12 @@ func TestEncodeBOSWrapping(t *testing.T) {
 	tok := NewTokenizer([]string{"ab"})
 	encoded := tok.Encode("ab")
 
-	// Format should be [BOS, 'a', 'b', BOS]
+	// Format should be [BOS, 'a', 'b', EOS]
 	if len(encoded) != 4 {
 		t.Fatalf("Encode('ab') len = %d, want 4", len(encoded))
 	}
-	if encoded[0] != tok.BOS || encoded[len(encoded)-1] != tok.BOS {
-		t.Errorf("Encode('ab') = %v, BOS=%d, expected BOS at start and end", encoded, tok.BOS)
+	if encoded[0] != tok.BOS || encoded[len(encoded)-1] != tok.EOS {
+		t.Errorf("Encode('ab') = %v, BOS=%d, EOS=%d, expected BOS at start and EOS at end", encoded, tok.BOS, tok.EOS)
 	}
 }
 
@@ -83,7 +85,7 @@ func TestTokenizerSingleChar(t *testing.T) {
 func TestTokenizerEmptyNames(t *testing.T) {
 	// Should handle empty name list gracefully (empty names filtered)
 	tok := NewTokenizer([]string{""})
-	if tok.VocabSize != 1 { // only BOS
-		t.Errorf("VocabSize for empty names = %d, want 1 (BOS only)", tok.VocabSize)
+	if tok.VocabSize != 2 { // BOS + EOS only
+		t.Errorf("VocabSize for empty names = %d, want 2 (BOS + EOS only)", tok.VocabSize)
 	}
 }

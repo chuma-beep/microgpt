@@ -88,7 +88,7 @@ const STAGE_DESCRIPTIONS: Record<number, React.ReactNode> = {
   ),
   11: (
     <>
-      LM head projects 16-dim hidden state to 27-dim <ConceptTooltip term="logits">logits</ConceptTooltip> (one score per{" "}
+      LM head projects 16-dim hidden state to 28-dim <ConceptTooltip term="logits">logits</ConceptTooltip> (one score per{" "}
       <ConceptTooltip term="vocabulary">vocabulary</ConceptTooltip> token).
     </>
   ),
@@ -274,7 +274,8 @@ export default function StepThrough() {
     const labels: string[] = [];
     for (let i = 0; i < data.nVocab; i++) {
       if (i < 26) labels.push(alphabet[i]);
-      else labels.push("BOS");
+      else if (i === 26) labels.push("BOS");
+      else labels.push("EOS");
     }
     return labels;
   }, [data]);
@@ -282,7 +283,8 @@ export default function StepThrough() {
   const targetLabel = useMemo(() => {
     if (!data) return "";
     const t = data.targets[posIdx];
-    if (t === data.nVocab - 1) return "BOS";
+    if (t === 26) return "BOS";
+    if (t === 27) return "EOS";
     return vocabLabels[t] ?? "";
   }, [data, posIdx, vocabLabels]);
 

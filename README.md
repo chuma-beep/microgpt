@@ -20,7 +20,7 @@ No external ML libraries. Every matrix multiply, backprop step, and optimizer up
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-6e7681?style=flat-square)
 ![Parameters](https://img.shields.io/badge/Parameters-~4.2k-f0883e?style=flat-square)
-![Vocab](https://img.shields.io/badge/Vocab-27_tokens-3fb950?style=flat-square)
+![Vocab](https://img.shields.io/badge/Vocab-28_tokens-3fb950?style=flat-square)
 
 <br>
 
@@ -38,7 +38,7 @@ Trained on 32,033 first names, the model learns to generate new name-like string
 $ go run . -steps 10000 -temperature 0.5
 
 Loaded 32033 names
-Vocab size: 27
+Vocab size: 28
 Train: 28829, Val: 3204
 
 step 100/10000, avg loss = 3.0746
@@ -93,13 +93,13 @@ go run . -generate
 
 | Component | Detail |
 |-----------|--------|
-| **Vocabulary** | Character-level: 26 letters + 1 BOS token = 27 tokens |
+| **Vocabulary** | Character-level: 26 letters + BOS + EOS = 28 tokens |
 | **Embeddings** | Token (wte) + positional (wpe), 16 dimensions |
 | **Attention** | Single transformer layer, 4-head causal self-attention |
 | **MLP** | Fully connected, ReLU activation, 4x hidden dimension |
 | **Normalization** | RMSNorm |
 | **Optimizer** | Adam (b1=0.9, b2=0.999, lr=0.001) |
-| **Parameters** | ~4.2k total (4,224 with default vocab, incl. 2x16 RMSNorm gamma) |
+| **Parameters** | ~4.3k total (4,256 with default vocab, incl. 2×16 RMSNorm gamma) |
 
 ---
 

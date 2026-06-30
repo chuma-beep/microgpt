@@ -31,7 +31,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
       type: "video",
     },
     detail:
-      "Each parameter starts as a random number and is gradually adjusted so the model's output gets closer to the correct answer. The total (4,224) comes from: token embeddings (432), positional embeddings (256), two RMSNorm layers (32), attention weights (1,024), MLP weights (2,048), and the LM head (432).",
+      "Each parameter starts as a random number and is gradually adjusted so the model's output gets closer to the correct answer. The total (4,256) comes from: token embeddings (448), positional embeddings (256), two RMSNorm layers (32), attention weights (1,024), MLP weights (2,048), and the LM head (448).",
   },
   transformer: {
     short:
@@ -115,7 +115,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
       type: "wiki",
     },
     detail:
-      "The LM head (a linear projection) converts the 16-dimensional hidden state into 27 logits, one per vocabulary token. These logits then pass through softmax to become probabilities.",
+      "The LM head (a linear projection) converts the 16-dimensional hidden state into 28 logits, one per vocabulary token. These logits then pass through softmax to become probabilities.",
   },
   loss: {
     short:
@@ -231,9 +231,9 @@ const CONCEPTS: Record<string, ConceptDef> = {
   },
   vocabulary: {
     short:
-      "The set of symbols the model knows. Here: the 26 lowercase letters plus a boundary marker (·), for 27 total.",
+      "The set of symbols the model knows. Here: the 26 lowercase letters plus BOS (beginning-of-sequence) and EOS (end-of-sequence) markers, for 28 total.",
     analogy:
-      "Imagine you have a 27-key typewriter where every name has to be spelled with just those keys.",
+      "Imagine you have a 28-key typewriter where every name has to be spelled with just those keys.",
     source: {
       url: "https://en.wikipedia.org/wiki/Tokenization",
       label: "Wikipedia · Tokenization ↗",
@@ -241,7 +241,7 @@ const CONCEPTS: Record<string, ConceptDef> = {
       type: "wiki",
     },
     detail:
-      "The boundary marker acts as both beginning-of-sequence (BOS) and end-of-sequence (EOS). The model always starts generating from BOS and stops when it predicts BOS again. Anything outside the vocabulary (like capital letters or punctuation) is ignored.",
+      "The BOS (beginning-of-sequence, index 26) marks the start and EOS (end-of-sequence, index 27) marks the end of a sequence. The model always starts generating from BOS and stops when it predicts EOS. Anything outside the vocabulary (like capital letters or punctuation) is ignored.",
   },
   d_model: {
     short:

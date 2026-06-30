@@ -7,6 +7,7 @@ type Tokenizer struct {
 	CharToIdx map[byte]int
 	IdxToChar []byte
 	BOS       int
+	EOS       int
 	VocabSize int
 }
 
@@ -31,12 +32,14 @@ func NewTokenizer(names []string) *Tokenizer {
 		charToIdx[c] = i
 		idxToChar[i] = c
 	}
-	vocabSize := len(unique) + 1
+	vocabSize := len(unique) + 2
 	BOS := len(unique)
+	EOS := len(unique) + 1
 	return &Tokenizer{
 		CharToIdx: charToIdx,
 		IdxToChar: idxToChar,
 		BOS:       BOS,
+		EOS:       EOS,
 		VocabSize: vocabSize,
 	}
 }
@@ -47,14 +50,14 @@ func (t *Tokenizer) Encode(s string) []int {
 	for i := 0; i < len(s); i++ {
 		tokens = append(tokens, t.CharToIdx[s[i]])
 	}
-	tokens = append(tokens, t.BOS)
+	tokens = append(tokens, t.EOS)
 	return tokens
 }
 
 func (t *Tokenizer) Decode(ids []int) string {
 	var out []byte
 	for _, id := range ids {
-		if id == t.BOS {
+		if id == t.BOS || id == t.EOS {
 			continue
 		}
 		out = append(out, t.IdxToChar[id])

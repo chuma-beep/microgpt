@@ -87,6 +87,7 @@ export default function LogitLens() {
     const chars: string[] = [];
     for (let i = 0; i < 26; i++) chars.push(alphabet[i]);
     chars.push("BOS");
+    chars.push("EOS");
     return chars;
   }, []);
 
@@ -141,10 +142,7 @@ export default function LogitLens() {
             <tbody>
               {data.topK.map((top5, pos) => {
                 const targetIdx = data.targets[pos];
-                const targetChar =
-                  targetIdx === (data.tokens.length > 0 ? 26 : data.tokens.length)
-                    ? "BOS"
-                    : allChars[targetIdx] ?? "?";
+                const targetChar = allChars[targetIdx] ?? "?";
                 const topMatch = top5.find((t) => t.idx === targetIdx);
                 const correct = topMatch !== undefined;
 
