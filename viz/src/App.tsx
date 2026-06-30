@@ -2114,7 +2114,7 @@ export default function App() {
         <Section
           number="8"
           title="Training Dynamics"
-          caption={<>Cross-entropy <ConceptTooltip term="loss">loss</ConceptTooltip> over 10,000 steps. The gap between train and validation indicates mild <ConceptTooltip term="overfitting">overfitting</ConceptTooltip> — the model generalises but could benefit from more data or <ConceptTooltip term="regularization">regularisation</ConceptTooltip>.</>}
+          caption={<>Cross-entropy <ConceptTooltip term="loss">loss</ConceptTooltip> over 10,000 steps. The gap between train and validation indicates mild <ConceptTooltip term="overfitting">overfitting</ConceptTooltip>: the model generalises but could benefit from more data or <ConceptTooltip term="regularization">regularisation</ConceptTooltip>.</>}
         >
           <LossPanel />
         </Section>
