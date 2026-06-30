@@ -2058,7 +2058,7 @@ export default function App() {
         <Section
           number="3"
           title="Attend"
-          caption={<>Four causal <ConceptTooltip term="attention">self-attention</ConceptTooltip> heads run in parallel. Each position computes dot-product scores against all previous positions, <ConceptTooltip term="softmax">softmax</ConceptTooltip>-normalises them, and produces a weighted sum of value vectors.</>}
+          caption={<>Four causal <ConceptTooltip term="attention">self-attention</ConceptTooltip> heads run in parallel. Each position computes dot-product scores against all previous positions, <ConceptTooltip term="softmax">softmax</ConceptTooltip>normalises them, and produces a weighted sum of value vectors.</>}
         >
           <AttentionPanel name={name} />
           <div className="col-span-12 lg:col-span-4 lg:pl-6">
@@ -2084,7 +2084,7 @@ export default function App() {
         <Section
           number="5"
           title="Predict"
-          caption={<>What does the model believe — before any sampling? Each row shows the top-5 predicted next characters (<ConceptTooltip term="logits">logits</ConceptTooltip> before <ConceptTooltip term="softmax">softmax</ConceptTooltip>). Click a row to expand the full probability distribution.</>}
+          caption={<>What does the model believe before any sampling? Each row shows the top-5 predicted next characters (<ConceptTooltip term="logits">logits</ConceptTooltip> before <ConceptTooltip term="softmax">softmax</ConceptTooltip>). Click a row to expand the full probability distribution.</>}
         >
           <LogitLens />
         </Section>
@@ -2094,7 +2094,7 @@ export default function App() {
         <Section
           number="6"
           title="Generate"
-          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back and repeat until the EOS token □. The bars show the model's confidence in each choice.</>}
+          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip>: pick a token, feed it back and repeat until the EOS token □. The bars show the model's confidence in each choice.</>}
         >
           <GenerationPanel />
         </Section>
