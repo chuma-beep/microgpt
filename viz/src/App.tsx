@@ -2094,7 +2094,7 @@ export default function App() {
         <Section
           number="6"
           title="Generate"
-          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back, repeat until the EOS token □. The bars show the model's confidence in each choice.</>}
+          caption={<>Names are sampled <ConceptTooltip term="autoregressive">autoregressively</ConceptTooltip> — pick a token, feed it back and repeat until the EOS token □. The bars show the model's confidence in each choice.</>}
         >
           <GenerationPanel />
         </Section>
