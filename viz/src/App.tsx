@@ -2074,7 +2074,7 @@ export default function App() {
         <Section
           number="4"
           title="Forward Pass"
-          caption={<>Step through every computation in the <ConceptTooltip term="forwardPass">forward pass</ConceptTooltip> — from token <ConceptTooltip term="embedding">embedding</ConceptTooltip> to final probability distribution. Select a position to inspect that token's perspective.</>}
+          caption={<>Step through every computation in the <ConceptTooltip term="forwardPass">forward pass</ConceptTooltip>, from token <ConceptTooltip term="embedding">embedding</ConceptTooltip> to final probability distribution. Select a position to inspect that token's perspective.</>}
         >
           <StepThrough />
         </Section>
