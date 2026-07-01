@@ -172,6 +172,8 @@ func goStepThrough(this js.Value, args []js.Value) interface{} {
 		tok := cache.Tokens[i]
 		if tok == globalGPT.tok.BOS {
 			labels[i] = "BOS"
+		} else if tok == globalGPT.tok.EOS {
+			labels[i] = "EOS"
 		} else {
 			labels[i] = string([]byte{globalGPT.tok.IdxToChar[tok]})
 		}
@@ -334,6 +336,8 @@ func goLogitLens(this js.Value, args []js.Value) interface{} {
 		tok := cache.Tokens[i]
 		if tok == globalGPT.tok.BOS {
 			labels[i] = "BOS"
+		} else if tok == globalGPT.tok.EOS {
+			labels[i] = "EOS"
 		} else {
 			labels[i] = string([]byte{globalGPT.tok.IdxToChar[tok]})
 		}
@@ -347,6 +351,8 @@ func goLogitLens(this js.Value, args []js.Value) interface{} {
 			char := ""
 			if j == globalGPT.tok.BOS {
 				char = "BOS"
+			} else if j == globalGPT.tok.EOS {
+				char = "EOS"
 			} else {
 				char = string([]byte{globalGPT.tok.IdxToChar[j]})
 			}
