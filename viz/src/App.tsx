@@ -2011,7 +2011,15 @@ export default function App() {
       <div className="relative z-10 mx-auto max-w-5xl px-8 py-20">
         <header className="mb-16 border-b border-[--ink] pb-10">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-            Appendix · vol. 1 · §3.2
+            Appendix · vol. 1 · §3.2 ·{" "}
+            <a
+              href="https://github.com/chuma-beep/microgpt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[--ink] hover:underline transition-colors"
+            >
+              github
+            </a>
           </div>
           <h1 className="mt-4 font-serif text-5xl leading-[1.1] tracking-tight text-[--ink]">
             <AnimatedTitle>microGPT</AnimatedTitle>
@@ -2124,8 +2132,17 @@ export default function App() {
         <InteractiveTrainerSection />
 
         <footer className="mt-20 border-t border-[--ink] pt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-[--muted-ink]">
-          end of appendix · figures rendered live
-        </footer>
+          <a
+            href="https://github.com/chuma-beep/microgpt"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[--ink] hover:underline transition-colors"
+          >
+            github
+          </a>
+          · end of appendix · figures rendered live
+          
+</footer>
       </div>
     </main>
   );
