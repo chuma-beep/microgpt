@@ -598,7 +598,7 @@ function AttentionPanel({ name }: { name: string }) {
   const renderHead = (matrix: number[][], headIdx: number) => {
     const n = matrix.length;
     return (
-      <div className="flex flex-col items-center">
+      <div key={headIdx} className="flex flex-col items-center">
         <div className="font-mono text-[10px] text-[--muted-ink] mb-1">
           Head {headIdx + 1}
         </div>
